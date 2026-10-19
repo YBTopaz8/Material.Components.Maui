@@ -14,13 +14,11 @@ public interface IElement
     {
         if (this is GraphicsView view and not IContainerElement)
 #if WINDOWS
-            (view.Parent as VisualElement)?.InvalidateMeasureNonVirtual(
-                InvalidationTrigger.MeasureChanged
-            );
+            (view.Parent as VisualElement)?.InvalidateMeasure();
 #else
             (
                 view as VisualElement
-            )?.InvalidateMeasureNonVirtual(InvalidationTrigger.MeasureChanged);
+            )?.InvalidateMeasure();
 #endif
 
         this.OnPropertyChanged();

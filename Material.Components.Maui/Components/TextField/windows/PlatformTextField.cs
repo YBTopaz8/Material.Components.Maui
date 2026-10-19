@@ -11,7 +11,7 @@ using Rect = Windows.Foundation.Rect;
 
 namespace Material.Components.Maui.Platform;
 
-public class PlatformTextField : PlatformTouchGraphicsView, IDisposable
+public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
 {
     public InputType InputType { get; set; }
     public CoreTextEditContext EditContext { get; private set; }

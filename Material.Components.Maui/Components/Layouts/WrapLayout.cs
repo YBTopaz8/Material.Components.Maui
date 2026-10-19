@@ -93,7 +93,7 @@ file class WrapLayoutManager(WrapLayout layout) : LayoutManager(layout)
         return result;
     }
 
-    private SizeRequest HorizontalMeasure(double widthConstraint, double heightConstraint)
+    private Size HorizontalMeasure(double widthConstraint, double heightConstraint)
     {
         var width = 0d;
         var height = 0d;
@@ -138,7 +138,7 @@ file class WrapLayoutManager(WrapLayout layout) : LayoutManager(layout)
         }
     }
 
-    private SizeRequest VerticalMeasure(double widthConstraint, double heightConstraint)
+    private Size VerticalMeasure(double widthConstraint, double heightConstraint)
     {
         var width = 0d;
         var height = 0d;

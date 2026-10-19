@@ -23,7 +23,7 @@ public class TouchGraphicsView
     public event EventHandler<TouchEventArgs> Released;
     public event EventHandler<TouchEventArgs> LongPressed;
 
-#if WINDOWS || MACCATALYST
+#if WINDOWS
     public event EventHandler<TouchEventArgs> RightClicked;
 #endif
 
