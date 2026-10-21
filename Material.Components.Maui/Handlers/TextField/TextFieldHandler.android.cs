@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Graphics.Platform;
+﻿using Material.Components.Maui.Platform;
+using Microsoft.Maui.Graphics.Platform;
 using Microsoft.Maui.Handlers;
 
 namespace Material.Components.Maui.Handlers;

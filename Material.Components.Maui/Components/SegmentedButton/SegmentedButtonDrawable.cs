@@ -56,7 +56,7 @@ internal class SegmentedButtonDrawable(SegmentedButton view) : IDrawable, IDispo
         if (
             rect.Contains(view.LastTouchPoint)
             && item.ViewState is ViewState.Hovered or ViewState.Pressed
-            && view.RipplePercent is not 0f or 1f
+                && view.RipplePercent is not (0f or 1f) 
         )
             canvas.DrawRipple(
                 view,

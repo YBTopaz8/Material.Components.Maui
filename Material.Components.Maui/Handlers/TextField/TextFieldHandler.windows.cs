@@ -1,4 +1,5 @@
-﻿using Material.Components.Maui.Platform.Editable;
+﻿using Material.Components.Maui.Platform;
+using Material.Components.Maui.Platform.Editable;
 using Microsoft.Maui.Handlers;
 
 namespace Material.Components.Maui.Handlers;

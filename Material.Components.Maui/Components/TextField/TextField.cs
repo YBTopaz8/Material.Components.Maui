@@ -507,7 +507,7 @@ public class TextField
         var desiredHeight = textSize.Height + 8f + 32f + 4f + 16f;
 
         var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill
+            this.HorizontalOptions.Alignment == LayoutAlignment.Fill &&!double.IsInfinity(maxWidth)
                 ? maxWidth
                 : this.Margin.HorizontalThickness
                     + Math.Max(
@@ -520,7 +520,7 @@ public class TextField
                             : this.WidthRequest
                     );
         var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill
+            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
                 ? maxHeight
                 : this.Margin.VerticalThickness
                     + Math.Max(

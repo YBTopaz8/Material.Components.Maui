@@ -4,12 +4,12 @@ using Android.OS;
 using Android.Text;
 using Android.Views.InputMethods;
 using AndroidX.Core.View;
+using Material.Components.Maui.Platform;
 using Microsoft.Maui.Graphics.Platform;
 using Microsoft.Maui.Platform;
 using PointF = Microsoft.Maui.Graphics.PointF;
 using RectF = Microsoft.Maui.Graphics.RectF;
-
-namespace Material.Components.Maui.Extensions.Platform;
+namespace Material.Components.Maui;
 
 internal static class IEditableElementExtension
 {
@@ -326,6 +326,135 @@ internal static class IEditableElementExtension
         return layout;
     }
 
+    public static CaretInfo NavigateUp<TElement>(this TElement element, float maxWidth)
+        where TElement : IEditableElement, IFontElement
+    {
+        var range = element.SelectionRange.Normalized();
+        if (range.Start == 0) return element.GetCaretInfo(maxWidth, 0);
 
+        var width = maxWidth - (float)element.EditablePadding.HorizontalThickness;
+        var text = element.Text ?? "";
+        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+
+        var font = new Microsoft.Maui.Graphics.Font(
+            element.FontFamily, (int)element.FontWeight,
+            element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal);
+
+        using var textPaint = new TextPaint { TextSize = element.FontSize * density };
+        textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
+
+        var alignment = element.TextAlignment is TextAlignment.End ? Android.Text.Layout.Alignment.AlignOpposite
+            : element.TextAlignment is TextAlignment.Center ? Android.Text.Layout.Alignment.AlignCenter
+            : Android.Text.Layout.Alignment.AlignNormal;
+
+        var layout = element.CreateStaticLayout(textPaint, width, alignment);
+        var currentLine = layout.GetLineForOffset(range.Start);
+
+        if (currentLine > 0)
+        {
+            var currentX = layout.GetPrimaryHorizontal(range.Start);
+            var newOffset = layout.GetOffsetForHorizontal(currentLine - 1, currentX);
+            return element.GetCaretInfo(maxWidth, newOffset);
+        }
+
+        return element.GetCaretInfo(maxWidth, 0);
+    }
+
+    public static CaretInfo NavigateDown<TElement>(this TElement element, float maxWidth)
+        where TElement : IEditableElement, IFontElement
+    {
+        var range = element.SelectionRange.Normalized();
+        var textLength = element.Text?.Length ?? 0;
+        if (range.End == textLength) return element.GetCaretInfo(maxWidth, textLength);
+
+        var width = maxWidth - (float)element.EditablePadding.HorizontalThickness;
+        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+
+        var font = new Microsoft.Maui.Graphics.Font(
+            element.FontFamily, (int)element.FontWeight,
+            element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal);
+
+        using var textPaint = new TextPaint { TextSize = element.FontSize * density };
+        textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
+
+        var alignment = element.TextAlignment is TextAlignment.End ? Android.Text.Layout.Alignment.AlignOpposite
+            : element.TextAlignment is TextAlignment.Center ? Android.Text.Layout.Alignment.AlignCenter
+            : Android.Text.Layout.Alignment.AlignNormal;
+
+        var layout = element.CreateStaticLayout(textPaint, width, alignment);
+        var currentLine = layout.GetLineForOffset(range.End);
+
+        if (currentLine < layout.LineCount - 1)
+        {
+            var currentX = layout.GetPrimaryHorizontal(range.End);
+            var newOffset = layout.GetOffsetForHorizontal(currentLine + 1, currentX);
+            return element.GetCaretInfo(maxWidth, newOffset);
+        }
+
+        return element.GetCaretInfo(maxWidth, textLength);
+    }
+
+
+    public static bool ShowKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField pv)
+        {
+            var inputMethodManager = (InputMethodManager)
+                pv.Context?.GetSystemService(Context.InputMethodService);
+            if (
+                inputMethodManager is not null
+                && (!inputMethodManager.InvokeIsActive(pv) || !CheckKeyboard(editor))
+            )
+            {
+                if (!pv.HasFocus)
+                    pv.RequestFocus();
+
+                return inputMethodManager.ShowSoftInput(pv, 0);
+            }
+        }
+
+        return false;
+    }
+
+    public static bool CheckKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField pv)
+        {
+            var insets = ViewCompat.GetRootWindowInsets(pv);
+            if (insets is null)
+            {
+                return false;
+            }
+
+            var result = insets.IsVisible(WindowInsetsCompat.Type.Ime());
+            return result;
+        }
+        return false;
+    }
+
+    public static bool HideKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField pv)
+        {
+            var focusedView = pv.Context?.GetActivity()?.Window?.CurrentFocus;
+            var tokenView = focusedView ?? pv;
+            var inputMethodManager = (InputMethodManager)
+                tokenView.Context?.GetSystemService(Context.InputMethodService);
+            var windowToken = tokenView.WindowToken;
+            if (
+                inputMethodManager.InvokeIsActive(tokenView)
+                && windowToken is not null
+                && inputMethodManager is not null
+            )
+            {
+                return inputMethodManager.HideSoftInputFromWindow(
+                    windowToken,
+                    HideSoftInputFlags.None
+                );
+            }
+        }
+
+        return false;
+    }
 
 }

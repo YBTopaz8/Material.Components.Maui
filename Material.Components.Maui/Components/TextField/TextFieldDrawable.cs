@@ -157,6 +157,10 @@ internal class TextFieldDrawable(TextField view) : IDrawable
     {
         if (string.IsNullOrEmpty(view.SupportingText))
             return;
+        // 1. Guard against negative or zero width (prevents E_INVALIDARG 0x80070057)
+        var width = rect.Width - 32f;
+        if (width <= 0 || rect.Height <= 16f)
+            return;
 
         var stRect = new Rect
         {
@@ -168,11 +172,16 @@ internal class TextFieldDrawable(TextField view) : IDrawable
 
         var weight = (int)view.FontWeight;
         var style = view.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
+       
+        // 2. Fallback font family so DirectWrite never receives an empty string
+        var fontName = string.IsNullOrEmpty(view.FontFamily) ? "Segoe UI" : view.FontFamily;
 
-        var font = new Microsoft.Maui.Graphics.Font(view.FontFamily, weight, style);
+        var font = new Microsoft.Maui.Graphics.Font(fontName, weight, style);
 
         canvas.Font = font;
-        canvas.FontColor = view.SupportingFontColor.WithAlpha(
+
+        var fontColor = view.SupportingFontColor ?? Colors.Gray;
+        canvas.FontColor = fontColor.WithAlpha(
             view.ViewState is ViewState.Disabled ? 0.38f : 1f
         );
         canvas.FontSize = 12f;

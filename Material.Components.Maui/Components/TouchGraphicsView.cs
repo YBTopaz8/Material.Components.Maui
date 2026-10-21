@@ -349,6 +349,10 @@ public class TouchGraphicsView
     private void OnRightTapped(object sender, Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs e)
     {
         var position = e.GetPosition(sender as PlatformTouchGraphicsView);
+
+        var points = new PointF[] { new PointF((float)position.X, (float)position.Y) };
+        this.RightClicked?.Invoke(this, new TouchEventArgs(points, true));
+
         this.ContextMenu?.Show(this, new Point(position.X, position.Y));
     }
 #endif

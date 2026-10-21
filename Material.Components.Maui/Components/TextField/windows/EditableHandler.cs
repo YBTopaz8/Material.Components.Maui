@@ -125,7 +125,7 @@ public class EditableHandler(TextField editor)
         if (range.IsRange)
         {
             var text = this.TextBuilder.ToString(range.Start, range.Length);
-            Clipboard.SetTextAsync(text);
+           _= Clipboard.SetTextAsync(text);
         }
     }
 
@@ -144,7 +144,7 @@ public class EditableHandler(TextField editor)
         if (range.IsRange)
         {
             var text = this.TextBuilder.ToString(range.Start, range.Length);
-            Clipboard.Default.SetTextAsync(text);
+           _=  Clipboard.Default.SetTextAsync(text);
             this.DeleteText();
         }
     }

@@ -1,9 +1,9 @@
-﻿using Microsoft.Graphics.Canvas;
+﻿using Material.Components.Maui.Platform;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Text;
 using Windows.UI.ViewManagement;
 using WinRT.Interop;
-
-namespace Material.Components.Maui.Extensions.Platform;
+namespace Material.Components.Maui;
 
 internal static class IEditableElementExtension
 {
@@ -225,4 +225,47 @@ internal static class IEditableElementExtension
 
 
 
+    public static bool ShowKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField pv)
+        {
+            var hwnd = editor.GetWindowHwnd();
+            if (hwnd != IntPtr.Zero)
+            {
+                pv.EditContext.NotifyFocusEnter();
+                var inputPane = InputPaneInterop.GetForWindow(hwnd);
+                return inputPane.TryShow();
+            }
+        }
+        return false;
+    }
+
+    public static bool CheckKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField)
+        {
+            var hwnd = editor.GetWindowHwnd();
+            if (hwnd != IntPtr.Zero)
+            {
+                var inputPane = InputPaneInterop.GetForWindow(hwnd);
+                return inputPane.Visible;
+            }
+        }
+        return false;
+    }
+
+    public static bool HideKeyboard(this TextField editor)
+    {
+        if (editor.Handler?.PlatformView is PlatformTextField pv)
+        {
+            var hwnd = editor.GetWindowHwnd();
+            if (hwnd != IntPtr.Zero)
+            {
+                pv.EditContext.NotifyFocusLeave();
+                var inputPane = InputPaneInterop.GetForWindow(hwnd);
+                return inputPane.TryHide();
+            }
+        }
+        return false;
+    }
 }

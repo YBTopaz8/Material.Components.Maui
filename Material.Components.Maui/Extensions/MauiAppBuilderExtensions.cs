@@ -1,4 +1,6 @@
 ﻿
+using Material.Components.Maui.Handlers;
+
 namespace Material.Components.Maui.Extensions;
 
 public static class MauiAppBuilderExtensions
@@ -8,6 +10,7 @@ public static class MauiAppBuilderExtensions
         return builder.ConfigureMauiHandlers(
             (handlers) =>
             {
+                handlers.AddHandler(typeof(TextField), typeof(TextFieldHandler));
 
             }
         );
