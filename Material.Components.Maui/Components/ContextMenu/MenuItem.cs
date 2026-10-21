@@ -148,7 +148,7 @@ public partial class MenuItem
         var (needWidth, needHeight) = this.GetDesiredSize();
 
         var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill
+            this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
                 ? maxWidth
                 : this.Margin.HorizontalThickness
                     + Math.Max(
@@ -156,7 +156,7 @@ public partial class MenuItem
                         this.WidthRequest == -1 ? Math.Min(maxWidth, needWidth) : this.WidthRequest
                     );
         var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill
+            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
                 ? maxHeight
                 : this.Margin.VerticalThickness
                     + Math.Max(

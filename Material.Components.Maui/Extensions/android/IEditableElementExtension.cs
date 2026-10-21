@@ -326,65 +326,6 @@ internal static class IEditableElementExtension
         return layout;
     }
 
-    public static bool ShowKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField pv)
-        {
-            var inputMethodManager = (InputMethodManager)
-                pv.Context?.GetSystemService(Context.InputMethodService);
-            if (
-                inputMethodManager is not null
-                && (!inputMethodManager.InvokeIsActive(pv) || !CheckKeyboard(editor))
-            )
-            {
-                if (!pv.HasFocus)
-                    pv.RequestFocus();
 
-                return inputMethodManager.ShowSoftInput(pv, 0);
-            }
-        }
 
-        return false;
-    }
-
-    public static bool CheckKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField pv)
-        {
-            var insets = ViewCompat.GetRootWindowInsets(pv);
-            if (insets is null)
-            {
-                return false;
-            }
-
-            var result = insets.IsVisible(WindowInsetsCompat.Type.Ime());
-            return result;
-        }
-        return false;
-    }
-
-    public static bool HideKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField pv)
-        {
-            var focusedView = pv.Context?.GetActivity()?.Window?.CurrentFocus;
-            var tokenView = focusedView ?? pv;
-            var inputMethodManager = (InputMethodManager)
-                tokenView.Context?.GetSystemService(Context.InputMethodService);
-            var windowToken = tokenView.WindowToken;
-            if (
-                inputMethodManager.InvokeIsActive(tokenView)
-                && windowToken is not null
-                && inputMethodManager is not null
-            )
-            {
-                return inputMethodManager.HideSoftInputFromWindow(
-                    windowToken,
-                    HideSoftInputFlags.None
-                );
-            }
-        }
-
-        return false;
-    }
 }

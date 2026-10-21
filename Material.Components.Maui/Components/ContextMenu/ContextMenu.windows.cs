@@ -89,7 +89,8 @@ public partial class ContextMenu
     public void Close(object result = null)
     {
         this.Result = result;
-        this.container.Hide();
+        if(container is not null)
+            this.container.Hide();
     }
 
     public bool IsShowing() => this.container?.IsOpen ?? false;

@@ -123,13 +123,14 @@ public class ExtendedFAB
         var scale =
             (this.HeightRequest != -1 ? this.HeightRequest : Math.Min(40f, maxHeight)) / 56f;
         var iconSize = (!string.IsNullOrEmpty(this.IconData) ? 24f : 0f) * scale;
+
         var textSize = this.GetStringSize();
         //18 + iconSize + 6 + textSize.Width + 24
         var needWidth = 48f * scale + iconSize + textSize.Width;
         var needHeight = 56f * scale;
 
         var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill
+            this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
                 ? maxWidth
                 : this.Margin.HorizontalThickness
                     + Math.Max(
@@ -137,7 +138,7 @@ public class ExtendedFAB
                         this.WidthRequest == -1 ? Math.Min(maxWidth, needWidth) : this.WidthRequest
                     );
         var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill
+            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
                 ? maxHeight
                 : this.Margin.VerticalThickness
                     + Math.Max(

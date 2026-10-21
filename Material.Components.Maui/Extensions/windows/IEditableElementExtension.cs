@@ -223,47 +223,6 @@ internal static class IEditableElementExtension
         return IntPtr.Zero;
     }
 
-    public static bool ShowKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField pv)
-        {
-            var hwnd = editor.GetWindowHwnd();
-            if (hwnd != IntPtr.Zero)
-            {
-                pv.EditContext.NotifyFocusEnter();
-                var inputPane = InputPaneInterop.GetForWindow(hwnd);
-                return inputPane.TryShow();
-            }
-        }
-        return false;
-    }
 
-    public static bool CheckKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField)
-        {
-            var hwnd = editor.GetWindowHwnd();
-            if (hwnd != IntPtr.Zero)
-            {
-                var inputPane = InputPaneInterop.GetForWindow(hwnd);
-                return inputPane.Visible;
-            }
-        }
-        return false;
-    }
 
-    public static bool HideKeyboard(this TextField editor)
-    {
-        if (editor.Handler?.PlatformView is PlatformTextField pv)
-        {
-            var hwnd = editor.GetWindowHwnd();
-            if (hwnd != IntPtr.Zero)
-            {
-                pv.EditContext.NotifyFocusLeave();
-                var inputPane = InputPaneInterop.GetForWindow(hwnd);
-                return inputPane.TryHide();
-            }
-        }
-        return false;
-    }
 }

@@ -1,12 +1,12 @@
 ﻿using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Text;
 
-namespace Material.Components.Maui.Extensions.Platform;
+namespace Material.Components.Maui;
 internal static class IFontElementExtension
 {
-    internal static SizeF GetStringSize<TElement>(this TElement element)
-        where TElement : ITextElement, IFontElement
+    internal static SizeF GetStringSize<TElement>(this TElement element)        where TElement : ITextElement, IFontElement
     {
+
         return element.GetStringSize(element.Text);
     }
 
@@ -29,9 +29,9 @@ internal static class IFontElementExtension
 
         var format = new CanvasTextFormat
         {
-            FontFamily = font.Name,
-            FontSize = fontSize,
-            FontWeight = new Windows.UI.Text.FontWeight { Weight = (ushort)font.Weight },
+            FontFamily = string.IsNullOrEmpty(font.Name) ? "Segoe UI" : font.Name,
+            FontSize = fontSize > 0 ? fontSize : 14f,
+            FontWeight = new Windows.UI.Text.FontWeight { Weight = (ushort)(font.Weight > 0 ? font.Weight : 400) },
             FontStyle =
                 font.StyleType is FontStyleType.Italic
                     ? Windows.UI.Text.FontStyle.Italic

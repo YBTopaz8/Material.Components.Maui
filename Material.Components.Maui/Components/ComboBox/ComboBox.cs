@@ -343,6 +343,7 @@ public class ComboBox
         var result = Size.Zero;
         foreach (var item in this.Items)
         {
+            
             var size = this.GetStringSize(item.Text);
             if (size.Width > result.Width)
                 result.Width = size.Width;
@@ -370,7 +371,7 @@ public class ComboBox
         var needHeight = 64f * scale;
 
         var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill
+            this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
                 ? maxWidth
                 : this.Margin.HorizontalThickness
                     + Math.Max(
@@ -378,7 +379,7 @@ public class ComboBox
                         this.WidthRequest == -1 ? Math.Min(maxWidth, needWidth) : this.WidthRequest
                     );
         var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill
+            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
                 ? maxHeight
                 : this.Margin.VerticalThickness
                     + Math.Max(
@@ -394,4 +395,6 @@ public class ComboBox
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
         this.Items != null ? this.Items : Array.Empty<IVisualTreeElement>().ToList();
+
+
 }

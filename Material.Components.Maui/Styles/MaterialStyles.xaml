@@ -20,13 +20,11 @@
         <Styles:ContextMenuStyles />
         <Styles:MenuItemStyles />
         <Styles:ComboBoxStyles />
-        <Styles:TextFieldStyles />
+        
         <Styles:ProgressIndicatorStyles />
         <Styles:RadioItemStyles />
-        <Styles:NavigationBarStyles />
-        <Styles:NavigationBarItemStyles />
-        <Styles:NavigationDrawerStyles />
-        <Styles:NavigationDrawerItemStyles />
+        
+        
         <Styles:TabsStyles />
         <Styles:TabItemStyles />
     </ResourceDictionary.MergedDictionaries>

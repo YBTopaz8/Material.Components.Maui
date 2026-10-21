@@ -44,13 +44,14 @@ internal static class CanvasExtension
 
     internal static void DrawBackground(this ICanvas canvas, IBackgroundElement element, RectF rect)
     {
-        if (element.BackgroundColor != Colors.Transparent)
+        if (element.BackgroundColor is { } bgColor && bgColor != Colors.Transparent)
         {
-            canvas.FillColor = element.BackgroundColor.MultiplyAlpha(
+            canvas.FillColor = bgColor.MultiplyAlpha(
                 element.ViewState is ViewState.Disabled ? 0.12f : 1f
             );
             canvas.FillRectangle(rect);
         }
+
     }
 
     internal static void DrawIcon(

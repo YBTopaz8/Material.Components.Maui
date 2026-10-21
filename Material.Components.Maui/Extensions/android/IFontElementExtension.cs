@@ -1,13 +1,14 @@
 ﻿using Android.Graphics;
 using Android.Text;
 using Microsoft.Maui.Graphics.Platform;
+namespace Material.Components.Maui;
 
-namespace Material.Components.Maui.Extensions.Platform;
 internal static class IFontElementExtension
 {
     internal static SizeF GetStringSize<TElement>(this TElement element)
         where TElement : ITextElement, IFontElement
     {
+
         return element.GetStringSize(element.Text);
     }
 
