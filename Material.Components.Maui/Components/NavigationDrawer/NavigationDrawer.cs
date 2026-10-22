@@ -33,6 +33,7 @@ public class NavigationDrawer
         propertyChanged: (bo, ov, nv) =>
         {
             var navDrawer = bo as NavigationDrawer;
+            if(navDrawer == null) return;
 
             if (nv is NavigationDrawerItem ndi)
             {
@@ -86,9 +87,9 @@ public class NavigationDrawer
         set => this.SetValue(TitleBarProperty, value);
     }
 
-    public ObservableCollection<View> Items
+    public ObservableCollection<View?> Items
     {
-        get => (ObservableCollection<View>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<View?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
@@ -99,7 +100,7 @@ public class NavigationDrawer
     }
 
     void IItemsElement<View>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -133,11 +134,11 @@ public class NavigationDrawer
         set => this.SetValue(CommandParameterProperty, value);
     }
 
-    public event EventHandler<SelectedItemChangedArgs<NavigationDrawerItem>> SelectedItemChanged;
+    public event EventHandler<SelectedItemChangedArgs<NavigationDrawerItem>>? SelectedItemChanged;
 
-    private Grid PART_Root;
+    private Grid? PART_Root;
 
-    private Popup drawer;
+    private Popup? drawer;
 
     public NavigationDrawer()
     {
@@ -243,6 +244,6 @@ public class NavigationDrawer
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
         this.Items != null
-            ? this.Items.Concat(this.FooterItems).Append(this.PART_Root).ToArray()
+            ? this.Items.Concat(this.FooterItems).Append(this.PART_Root).ToArray()!
             : Array.Empty<IVisualTreeElement>().ToList();
 }

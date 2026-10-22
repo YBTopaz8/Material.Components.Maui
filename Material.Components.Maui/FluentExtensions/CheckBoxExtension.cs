@@ -13,10 +13,10 @@ public static class CheckBoxExtension
         this TBindable view,
         string path,
         BindingMode mode = BindingMode.Default,
-        IValueConverter converter = null,
-        object converterParameter = null,
-        string stringFormat = null,
-        object source = null
+        IValueConverter? converter = null,
+        object? converterParameter = null,
+        string? stringFormat = null,
+        object? source = null
     ) where TBindable : CheckBox
     {
         var binding = new Binding(path, mode, converter, converterParameter, stringFormat, source);

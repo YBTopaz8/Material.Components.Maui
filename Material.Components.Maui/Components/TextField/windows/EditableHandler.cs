@@ -27,15 +27,15 @@ public class EditableHandler(TextField editor)
     }
     public int TextLength => this.TextBuilder.Length;
 
-    public event EventHandler<SelectionChangedArgs> SelectionChanged;
+    public event EventHandler<SelectionChangedArgs>? SelectionChanged;
 
     public StringBuilder TextBuilder { get; private set; } = new();
 
     readonly UndoRedoHelper undoRedoHelper = new();
 
-    public void UpdateText(string text)
+    public void UpdateText(string? text)
     {
-        if (text == null || text == this.ToString())
+        if (text == null || text.CompareTo(this.ToString()) == 0)
             return;
 
         var range = this.SelectionRange.Normalized();
@@ -125,7 +125,7 @@ public class EditableHandler(TextField editor)
         if (range.IsRange)
         {
             var text = this.TextBuilder.ToString(range.Start, range.Length);
-           _= Clipboard.SetTextAsync(text);
+            _ = Clipboard.SetTextAsync(text);
         }
     }
 
@@ -144,7 +144,7 @@ public class EditableHandler(TextField editor)
         if (range.IsRange)
         {
             var text = this.TextBuilder.ToString(range.Start, range.Length);
-           _=  Clipboard.Default.SetTextAsync(text);
+            _ = Clipboard.Default.SetTextAsync(text);
             this.DeleteText();
         }
     }

@@ -4,7 +4,7 @@ namespace Material.Components.Maui.Extensions;
 
 internal static class ResourceExtension
 {
-    public static ICollection<ResourceDictionary> MaterialDictionaries { get; set; }
+    public static ICollection<ResourceDictionary>? MaterialDictionaries { get; set; }
 
     private static Scheme<Color> lightScheme = SchemeExtensions.GetDefaultScheme(AppTheme.Light);
     public static Scheme<Color> LightScheme
@@ -13,7 +13,7 @@ internal static class ResourceExtension
         set
         {
             lightScheme = value;
-            if (Application.Current.RequestedTheme is AppTheme.Light)
+            if (Application.Current?.RequestedTheme is AppTheme.Light)
             {
                 UpdateMaterialColors();
             }
@@ -27,7 +27,7 @@ internal static class ResourceExtension
         set
         {
             darkScheme = value;
-            if (Application.Current.RequestedTheme is AppTheme.Dark)
+            if (Application.Current?.RequestedTheme is AppTheme.Dark)
             {
                 UpdateMaterialColors();
             }
@@ -37,12 +37,13 @@ internal static class ResourceExtension
     internal static void UpdateMaterialColors()
     {
         var scheme =
-            Application.Current.RequestedTheme is AppTheme.Light ? LightScheme : DarkScheme;
+            Application.Current?.RequestedTheme is AppTheme.Light ? LightScheme : DarkScheme;
 
-        var colorRes = MaterialDictionaries.First(
+        var colorRes = MaterialDictionaries?.First(
             x => x.GetType() == typeof(Styles.MaterialColors)
         );
-
+        if (colorRes is null)
+            return;
         colorRes["PrimaryColor"] = scheme.Primary;
         colorRes["PrimaryContainerColor"] = scheme.PrimaryContainer;
         colorRes["OnPrimaryColor"] = scheme.OnPrimary;
@@ -87,7 +88,7 @@ internal static class ResourceExtension
         colorRes["ShadowColor"] = scheme.Shadow;
     }
 
-    internal static Style FindStyle(this ResourceDictionary resources, string key)
+    internal static Style? FindStyle(this ResourceDictionary resources, string key)
     {
         if (resources.ContainsKey(key))
         {

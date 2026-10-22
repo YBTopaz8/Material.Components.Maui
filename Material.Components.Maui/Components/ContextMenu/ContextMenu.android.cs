@@ -5,13 +5,21 @@ namespace Material.Components.Maui;
 
 public partial class ContextMenu
 {
-    private PopupWindow container;
-    private Android.Views.View platformContent;
-    private Android.Views.View platformAnchor;
+    private PopupWindow? container;
+    private Android.Views.View? platformContent;
+    private Android.Views.View? platformAnchor;
 
-    private void PlatformShow(View anchor)
+    private void PlatformShow(View? anchor)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor?.Handler?.MauiContext;
+        if(context == null)
+        {
+            throw new InvalidOperationException("Anchor view must be attached to a handler.");
+        }
+        if(anchor == null)
+        {
+            throw new ArgumentNullException(nameof(anchor), "Anchor view cannot be null.");
+        }
         if (this.container == null)
         {
             this.platformContent = this.ToPlatform(context);
@@ -19,14 +27,22 @@ public partial class ContextMenu
             this.container = new PopupWindow(this.platformContent) { OutsideTouchable = true };
             this.container.DismissEvent += this.OnClosed;
         }
-        this.container.Width = (int)this.platformContent.Context.ToPixels(this.DesiredSize.Width);
-        this.container.Height = (int)this.platformContent.Context.ToPixels(this.DesiredSize.Height);
+        this.container.Width = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Width);
+        this.container.Height = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Height);
         this.container.ShowAsDropDown(this.platformAnchor);
     }
 
-    private void PlatformShow(View anchor, Point point)
+    private void PlatformShow(View? anchor, Point point)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor?.Handler?.MauiContext;
+        if (context == null)
+        {
+            throw new InvalidOperationException("Anchor view must be attached to a handler.");
+        }
+        if (anchor == null)
+        {
+            throw new ArgumentNullException(nameof(anchor), "Anchor view cannot be null.");
+        }
         if (this.container == null)
         {
             this.platformContent = this.ToPlatform(context);
@@ -34,23 +50,24 @@ public partial class ContextMenu
             this.container = new PopupWindow(this.platformContent) { OutsideTouchable = true };
             this.container.DismissEvent += this.OnClosed;
         }
-        this.container.Width = (int)this.platformContent.Context.ToPixels(this.DesiredSize.Width);
-        this.container.Height = (int)this.platformContent.Context.ToPixels(this.DesiredSize.Height);
+        this.container.Width = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Width);
+        this.container.Height = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Height);
 
         var location = new int[2];
-        this.platformAnchor.GetLocationOnScreen(location);
+        this.platformAnchor!.GetLocationOnScreen(location);
         this.container.ShowAtLocation(
             this.platformAnchor,
             Android.Views.GravityFlags.Left | Android.Views.GravityFlags.Top,
-            location[0] + (int)this.platformContent.Context.ToPixels(point.X),
-            location[1] + (int)this.platformContent.Context.ToPixels(point.Y)
+            location[0] + (int)this.platformContent!.Context.ToPixels(point.X),
+            location[1] + (int)this.platformContent!.Context.ToPixels(point.Y)
         );
     }
 
-    public void Close(object result = null)
+    public void Close(object? result = null)
     {
         this.Result = result;
-        this.container.Dismiss();
+        if(container is not null)
+            this.container.Dismiss();
     }
 
     public bool IsShowing() => this.container?.IsShowing ?? false;

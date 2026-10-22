@@ -83,7 +83,7 @@ public partial class MenuItem
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -97,7 +97,7 @@ public partial class MenuItem
         set => this.SetValue(TrailingIconDataProperty, value);
     }
 
-    PathF ITrailingIconElement.TrailingIconPath { get; set; }
+    PathF? ITrailingIconElement.TrailingIconPath { get; set; }
 
     public Color TrailingIconColor
     {
@@ -110,7 +110,7 @@ public partial class MenuItem
         this.Drawable = new MenuItemDrawable(this);
     }
 
-    protected override void OnStartHoverInteraction(object sender, TouchEventArgs e)
+    protected override void OnStartHoverInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;

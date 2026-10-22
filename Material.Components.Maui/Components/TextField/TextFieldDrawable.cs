@@ -172,12 +172,9 @@ internal class TextFieldDrawable(TextField view) : IDrawable
 
         var weight = (int)view.FontWeight;
         var style = view.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
-       
+
         // 2. Fallback font family so DirectWrite never receives an empty string
-        var fontName = string.IsNullOrEmpty(view.FontFamily) ? "Segoe UI" : view.FontFamily;
-
-        var font = new Microsoft.Maui.Graphics.Font(fontName, weight, style);
-
+        var font = new Microsoft.Maui.Graphics.Font(view.FontFamily, weight, style);
         canvas.Font = font;
 
         var fontColor = view.SupportingFontColor ?? Colors.Gray;

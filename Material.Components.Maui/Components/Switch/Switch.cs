@@ -69,10 +69,10 @@ public class Switch
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as Switch;
-            view.ChangeVisualState();
-            view.SelectedChanged?.Invoke(view, new((bool)nv));
+            view?.ChangeVisualState();
+            view?.SelectedChanged?.Invoke(view, new((bool)nv));
 
-            if (view.Command?.CanExecute(view.CommandParameter ?? nv) is true)
+            if (view?.Command?.CanExecute(view.CommandParameter ?? nv) is true)
                 view.Command?.Execute(view.CommandParameter ?? nv);
         }
     );
@@ -156,7 +156,7 @@ public class Switch
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -182,9 +182,9 @@ public class Switch
         set => this.SetValue(CommandParameterProperty, value);
     }
 
-    public event EventHandler<CheckedChangedEventArgs> SelectedChanged;
+    public event EventHandler<CheckedChangedEventArgs>? SelectedChanged;
 
-    protected IAnimationManager animationManager;
+    protected IAnimationManager? animationManager;
     bool isTouching = false;
 
     public Switch()
@@ -199,7 +199,7 @@ public class Switch
         this.EndHoverInteraction += this.OnEndHoverInteraction;
     }
 
-    private void OnStartInteraction(object sender, TouchEventArgs e)
+    private void OnStartInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -208,7 +208,7 @@ public class Switch
         this.isTouching = true;
     }
 
-    private void OnEndInteraction(object sender, TouchEventArgs e)
+    private void OnEndInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -228,12 +228,12 @@ public class Switch
         this.isTouching = false;
     }
 
-    private void OnCancelInteraction(object sender, EventArgs e)
+    private void OnCancelInteraction(object? sender, EventArgs e)
     {
         this.isTouching = false;
     }
 
-    private void OnStartHoverInteraction(object sender, TouchEventArgs e)
+    private void OnStartHoverInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -241,7 +241,7 @@ public class Switch
         this.ViewState = ViewState.Hovered;
     }
 
-    private void OnEndHoverInteraction(object sender, EventArgs e)
+    private void OnEndHoverInteraction(object? sender, EventArgs e)
     {
         if (!this.IsEnabled)
             return;

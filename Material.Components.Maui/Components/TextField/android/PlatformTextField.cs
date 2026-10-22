@@ -14,16 +14,16 @@ namespace Material.Components.Maui.Platform;
 
 public class PlatformTextField : TextView
 {
-    public new event EventHandler<EditTextChangedEventArgs> TextChanged;
+    public new event EventHandler<EditTextChangedEventArgs>? TextChanged;
 
-    public event EventHandler<SelectionChangedArgs> SelectionChanged;
+    public event EventHandler<SelectionChangedArgs>? SelectionChanged;
 
-    private readonly IKeyListener editableKeyListener;
+    private readonly IKeyListener? editableKeyListener;
 
-    public PlatformTextField(Context context, IDrawable drawable = null)
+    public PlatformTextField(Context context, IDrawable? drawable = null)
         : base(context, null, Android.Resource.Attribute.EditTextStyle, 0)
     {
-        this.scale = this.Resources.DisplayMetrics.Density;
+        this.scale = this.Resources?.DisplayMetrics is null ? 1 : this.Resources.DisplayMetrics.Density;
         this.canvas = new PlatformCanvas(context);
         this.scalingCanvas = new ScalingCanvas(this.canvas);
         this.drawable = drawable;
@@ -38,7 +38,7 @@ public class PlatformTextField : TextView
 
     public void UpdateDrawable(IDrawable drawable) => this.drawable = drawable;
 
-    public void UpdateText(string text) => this.Text = text;
+    public void UpdateText(string? text) => this.Text = text;
 
     public void UpdateFontSize(float size) => this.SetTextSize(Android.Util.ComplexUnitType.Dip, size);
 
@@ -70,7 +70,7 @@ public class PlatformTextField : TextView
         this.TransformationMethod =
             type is Primitives.InputType.Password
                 ? PasswordTransformationMethod.Instance
-                : (ITransformationMethod)null;
+                : (ITransformationMethod?)null;
     }
 
     public void UpdateIsReadOnly(bool isReadOnly)
@@ -85,21 +85,21 @@ public class PlatformTextField : TextView
         set => base.FreezesText = value;
     }
 
-    protected override IMovementMethod DefaultMovementMethod => ArrowKeyMovementMethod.Instance;
+    protected override IMovementMethod? DefaultMovementMethod => ArrowKeyMovementMethod.Instance;
 
     public override int SelectionStart => Selection.GetSelectionStart(this.EditableText);
 
     public override int SelectionEnd => Selection.GetSelectionEnd(this.EditableText);
 
     protected override void OnTextChanged(
-        Java.Lang.ICharSequence text,
+        Java.Lang.ICharSequence? text,
         int start,
         int lengthBefore,
         int lengthAfter
     )
     {
         base.OnTextChanged(text, start, lengthBefore, lengthAfter);
-        this.TextChanged?.Invoke(this, new(this.Text, new(this.SelectionStart, this.SelectionEnd)));
+        this.TextChanged?.Invoke(this, new EditTextChangedEventArgs(this.Text, new(this.SelectionStart, this.SelectionEnd)));
     }
 
     protected override void OnSelectionChanged(int selStart, int selEnd)
@@ -110,12 +110,12 @@ public class PlatformTextField : TextView
 
     public override bool OnCheckIsTextEditor() => true;
 
-    public override void SetText(Java.Lang.ICharSequence text, BufferType type) =>
+    public override void SetText(Java.Lang.ICharSequence? text, BufferType? type) =>
         base.SetText(text, BufferType.Editable);
 
     //------------------------------------------------------------------------------------------------//
 
-    public Color BackgroundColor
+    public Color? BackgroundColor
     {
         get => this.backgroundColor;
         set
@@ -129,11 +129,11 @@ public class PlatformTextField : TextView
     int height;
     readonly PlatformCanvas canvas;
     readonly ScalingCanvas scalingCanvas;
-    IDrawable drawable;
+    IDrawable? drawable;
     readonly float scale = 1;
-    Color backgroundColor;
+    Color? backgroundColor;
 
-    IGraphicsView graphicsView;
+    IGraphicsView? graphicsView;
     RectF bounds;
     bool dragStarted;
     PointF[] lastMovedViewPoints = [];
@@ -181,9 +181,11 @@ public class PlatformTextField : TextView
         }
     }
 
-    public override bool OnTouchEvent(MotionEvent e)
+    public override bool OnTouchEvent(MotionEvent? e)
     {
         base.OnTouchEvent(e);
+        if(e is null)
+            return false;   
         var touchCount = e.PointerCount;
         var touchPoints = new PointF[touchCount];
         for (var i = 0; i < touchCount; i++)
@@ -251,7 +253,7 @@ public class PlatformTextField : TextView
         this.graphicsView?.CancelInteraction();
     }
 
-    public override bool OnHoverEvent(MotionEvent e)
+    public override bool OnHoverEvent(MotionEvent? e)
     {
         base.OnHoverEvent(e);
         ArgumentNullException.ThrowIfNull(e);

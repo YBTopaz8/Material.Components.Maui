@@ -169,7 +169,7 @@ internal static class IEditableElementExtension
         float maxWidth
     ) where TElement : IEditableElement, IFontElement
     {
-        var text = element.InputType is InputType.Password ? new string('•', element.Text.Length) : element.Text;
+        var text = element.InputType is InputType.Password ? new string('•', element.Text!.Length) : element.Text;
         var fontSize = element.FontSize;
 
         var weight = (int)element.FontWeight;

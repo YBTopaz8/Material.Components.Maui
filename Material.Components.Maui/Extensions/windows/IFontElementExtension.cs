@@ -10,10 +10,10 @@ internal static class IFontElementExtension
         return element.GetStringSize(element.Text);
     }
 
-    internal static SizeF GetStringSize<TElement>(this TElement element, string text)
+    internal static SizeF GetStringSize<TElement>(this TElement element, string? text)
         where TElement : IFontElement
     {
-        return element.GetStringSize(text, element.FontSize);
+        return element.GetStringSize(text ?? string.Empty, element.FontSize);
     }
 
     internal static SizeF GetStringSize<TElement>(this TElement element, string text, float fontSize)

@@ -18,13 +18,13 @@ public class TouchGraphicsView
         IStyleElement,
         IDisposable
 {
-    public event EventHandler<TouchEventArgs> Clicked;
-    public event EventHandler<TouchEventArgs> Pressed;
-    public event EventHandler<TouchEventArgs> Released;
-    public event EventHandler<TouchEventArgs> LongPressed;
+    public event EventHandler<TouchEventArgs>? Clicked;
+    public event EventHandler<TouchEventArgs>? Pressed;
+    public event EventHandler<TouchEventArgs>? Released;
+    public event EventHandler<TouchEventArgs>? LongPressed;
 
 #if WINDOWS
-    public event EventHandler<TouchEventArgs> RightClicked;
+    public event EventHandler<TouchEventArgs>? RightClicked;
 #endif
 
     protected bool IsVisualStateChanging { get; set; }
@@ -134,7 +134,7 @@ public class TouchGraphicsView
     internal float RipplePercent { get; set; }
     internal PointF LastTouchPoint { get; set; }
 
-    protected IAnimationManager animationManager;
+    protected IAnimationManager? animationManager;
     readonly IDispatcherTimer touchTimer;
     protected bool isTouching;
 
@@ -190,7 +190,7 @@ public class TouchGraphicsView
         };
     }
 
-    protected virtual void OnStartInteraction(object sender, TouchEventArgs e)
+    protected virtual void OnStartInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -206,7 +206,7 @@ public class TouchGraphicsView
         this.touchTimer.Start();
     }
 
-    protected virtual void OnEndInteraction(object sender, TouchEventArgs e)
+    protected virtual void OnEndInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -229,7 +229,7 @@ public class TouchGraphicsView
         this.touchTimer.Stop();
     }
 
-    protected virtual void OnCancelInteraction(object sender, EventArgs e)
+    protected virtual void OnCancelInteraction(object? sender, EventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -240,7 +240,7 @@ public class TouchGraphicsView
         this.touchTimer.Stop();
     }
 
-    protected virtual void OnStartHoverInteraction(object sender, TouchEventArgs e)
+    protected virtual void OnStartHoverInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -248,14 +248,14 @@ public class TouchGraphicsView
         this.ViewState = ViewState.Hovered;
     }
 
-    protected virtual void OnEndHoverInteraction(object sender, EventArgs e)
+    protected virtual void OnEndHoverInteraction(object? sender, EventArgs e)
     {
         if (!this.IsEnabled)
             return;
         this.ViewState = ViewState.Normal;
     }
 
-    protected virtual void OnMoveHoverInteraction(object sender, TouchEventArgs e)
+    protected virtual void OnMoveHoverInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -265,7 +265,7 @@ public class TouchGraphicsView
 
     protected virtual void StartRippleEffect()
     {
-        this.animationManager ??= this.Handler
+        this.animationManager ??= this.Handler?
             .MauiContext
             ?.Services
             .GetRequiredService<IAnimationManager>();
@@ -340,7 +340,7 @@ public class TouchGraphicsView
         {
 #if WINDOWS
             var pv = this.Handler.PlatformView as PlatformTouchGraphicsView;
-            pv.RightTapped += this.OnRightTapped;
+            pv?.RightTapped += this.OnRightTapped;
 #endif
         }
     }
@@ -374,7 +374,7 @@ public class TouchGraphicsView
                 {
 #if WINDOWS
                     var pv = this.Handler.PlatformView as PlatformTouchGraphicsView;
-                    pv.RightTapped -= this.OnRightTapped;
+                    pv?.RightTapped -= this.OnRightTapped;
 #endif
                 }
             }

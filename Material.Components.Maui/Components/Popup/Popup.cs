@@ -81,14 +81,14 @@ public partial class Popup : View, IVisualTreeElement, IDisposable
         set => this.SetValue(OffsetYProperty, value);
     }
 
-    public EventHandler Opened;
-    public EventHandler<object> Closed;
+    public EventHandler? Opened;
+    public EventHandler<object?>? Closed;
 
-    private readonly TaskCompletionSource<object> taskCompletionSource = new();
+    private readonly TaskCompletionSource<object?> taskCompletionSource = new();
 
     private bool disposedValue;
 
-    public async Task<object> ShowAtAsync(Page anchor = default)
+    public async Task<object?> ShowAtAsync(Page? anchor = default)
     {
         this.PlatformShow(anchor);
         return await this.taskCompletionSource.Task;

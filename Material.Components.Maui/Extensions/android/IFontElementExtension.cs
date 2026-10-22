@@ -12,13 +12,13 @@ internal static class IFontElementExtension
         return element.GetStringSize(element.Text);
     }
 
-    internal static SizeF GetStringSize<TElement>(this TElement element, string text)
+    internal static SizeF GetStringSize<TElement>(this TElement element, string? text)
         where TElement : IFontElement
     {
         return element.GetStringSize(text, element.FontSize);
     }
 
-    internal static SizeF GetStringSize<TElement>(this TElement element, string text, float fontSize)
+    internal static SizeF GetStringSize<TElement>(this TElement element, string? text, float fontSize)
         where TElement : IFontElement
     {
         if (string.IsNullOrEmpty(text))
@@ -29,7 +29,7 @@ internal static class IFontElementExtension
 
         var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
 
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
         using var textPaint = new TextPaint { TextSize = fontSize * density };
         textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
         using var bounds = new Android.Graphics.Rect();

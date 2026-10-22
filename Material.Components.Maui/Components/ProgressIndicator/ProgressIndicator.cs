@@ -29,6 +29,8 @@ public class ProgressIndicator
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as ProgressIndicator;
+            if(view == null)
+                return;
             if (view.Percent == -1f)
             {
                 view.AnimationIsPositive = true;
@@ -146,9 +148,9 @@ public class ProgressIndicator
         set => this.SetValue(CommandParameterProperty, value);
     }
 
-    public event EventHandler<ValueChangedEventArgs> PercentChanged;
+    public event EventHandler<ValueChangedEventArgs>? PercentChanged;
 
-    private IAnimationManager animationManager;
+    private IAnimationManager? animationManager;
     internal float AnimationPercent { get; private set; } = 0f;
     internal bool AnimationIsPositive = true;
 
@@ -166,7 +168,7 @@ public class ProgressIndicator
             return;
         }
 
-        this.animationManager ??= this.Handler
+        this.animationManager ??= this.Handler?
             .MauiContext
             ?.Services
             .GetRequiredService<IAnimationManager>();
@@ -190,14 +192,14 @@ public class ProgressIndicator
         {
             if (this.Percent != -1f)
             {
-                this.animationManager.Remove(animation);
+                this.animationManager?.Remove(animation);
             }
             else if (this.IndicatorType is IndicatorType.Circular)
             {
                 this.AnimationIsPositive = !this.AnimationIsPositive;
             }
         };
-        this.animationManager.Add(animation);
+        this.animationManager?.Add(animation);
     }
 
     protected override void OnHandlerChanged()

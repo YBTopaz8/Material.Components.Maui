@@ -21,11 +21,14 @@ public class NavigationBar
         propertyChanged: (bo, ov, nv) =>
         {
             var navBar = bo as NavigationBar;
+            if (navBar is null) return;
             var item = (NavigationBarItem)nv;
 
             foreach (var navItem in navBar.Items)
+            {
+                if(navItem is null) continue;
                 navItem.IsActived = item.Equals(navItem);
-
+            }
             navBar.SelectedItemChanged?.Invoke(navBar, new(item));
 
             if (navBar.Command?.CanExecute(navBar.CommandParameter ?? item) is true)
@@ -37,29 +40,29 @@ public class NavigationBar
     public static readonly BindableProperty CommandParameterProperty =
         IICommandElement.CommandParameterProperty;
 
-    public ObservableCollection<NavigationBarItem> Items
+    public ObservableCollection<NavigationBarItem?> Items
     {
-        get => (ObservableCollection<NavigationBarItem>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<NavigationBarItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
     void IItemsElement<NavigationBarItem>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
         if (e.Action is NotifyCollectionChangedAction.Add)
         {
-            if (this.Items[e.NewStartingIndex].IsActived)
+            if (this.Items[e.NewStartingIndex]?.IsActived is true)
                 this.SelectedItem = this.Items[e.NewStartingIndex];
 
             this.SelectedItem ??= this.Items[e.NewStartingIndex];
         }
     }
 
-    public NavigationBarItem SelectedItem
+    public NavigationBarItem? SelectedItem
     {
-        get => (NavigationBarItem)this.GetValue(SelectedItemProperty);
+        get => (NavigationBarItem?)this.GetValue(SelectedItemProperty);
         set => this.SetValue(SelectedItemProperty, value);
     }
 
@@ -75,9 +78,9 @@ public class NavigationBar
         set => this.SetValue(CommandParameterProperty, value);
     }
 
-    public event EventHandler<SelectedItemChangedArgs<NavigationBarItem>> SelectedItemChanged;
+    public event EventHandler<SelectedItemChangedArgs<NavigationBarItem>>? SelectedItemChanged;
 
-    private Grid PART_Root;
+    private Grid? PART_Root;
 
     protected override void OnApplyTemplate()
     {
@@ -96,5 +99,5 @@ public class NavigationBar
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
-        this.Items != null ? this.Items : Array.Empty<IVisualTreeElement>().ToList();
+        this.Items != null ? this.Items! : Array.Empty<IVisualTreeElement>().ToList();
 }

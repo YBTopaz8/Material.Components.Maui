@@ -88,7 +88,7 @@ public class Button
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -119,7 +119,7 @@ public class Button
         this.Clicked += this.OnClicked;
     }
 
-    void OnClicked(object sender, TouchEventArgs e)
+    void OnClicked(object? sender, TouchEventArgs e)
     {
         if (this.Command?.CanExecute(this.CommandParameter) is true)
             this.Command?.Execute(this.CommandParameter);

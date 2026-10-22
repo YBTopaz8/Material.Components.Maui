@@ -2,7 +2,7 @@
 
 public interface IEditableElement : IElement
 {
-    string Text { get; set; }
+    string? Text { get; set; }
     TextRange SelectionRange { get; set; }
     Color CaretColor { get; set; }
     TextAlignment TextAlignment { get; set; }

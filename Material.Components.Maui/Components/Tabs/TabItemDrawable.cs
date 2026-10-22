@@ -20,17 +20,19 @@ internal class TabItemDrawable(TabItem view) : IDrawable
         //#endif
 
         var tabs = view.GetParentElement<Tabs>();
-        switch (tabs.ItemStyle)
+        if (tabs is not null)
         {
-            case ItemStyle.Secondary:
-            case ItemStyle.ScrollingSecondary:
-                this.DrawSecondaryStyle(canvas, rect);
-                break;
-            default:
-                this.DrawPrimaryStyle(canvas, rect);
-                break;
+            switch (tabs.ItemStyle)
+            {
+                case ItemStyle.Secondary:
+                case ItemStyle.ScrollingSecondary:
+                    this.DrawSecondaryStyle(canvas, rect);
+                    break;
+                default:
+                    this.DrawPrimaryStyle(canvas, rect);
+                    break;
+            }
         }
-
         canvas.ResetState();
     }
 

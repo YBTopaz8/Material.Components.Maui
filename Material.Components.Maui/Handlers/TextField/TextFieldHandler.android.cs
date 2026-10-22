@@ -16,7 +16,7 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         handler.PlatformView?.UpdateDrawable(virtualView.Drawable);
     }
 
-    public static void MapInvalidate(TextFieldHandler handler, TextField virtualView, object arg)
+    public static void MapInvalidate(TextFieldHandler handler, TextField virtualView, object? arg)
     {
         handler.PlatformView?.Invalidate();
     }
@@ -37,13 +37,13 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         base.DisconnectHandler(platformView);
     }
 
-    private void OnTextChanged(object sender, EditTextChangedEventArgs e)
+    private void OnTextChanged(object? sender, EditTextChangedEventArgs e)
     {
         this.VirtualView.Text = e.Text;
         this.VirtualView.UpdateSelectionRange(e.SelectionRange);
     }
 
-    private void OnSelectionChanged(object sender, SelectionChangedArgs e)
+    private void OnSelectionChanged(object? sender, SelectionChangedArgs e)
     {
         this.VirtualView.UpdateSelectionRange(e.SelectionRange);
     }

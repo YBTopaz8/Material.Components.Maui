@@ -169,7 +169,7 @@ public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
             this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
     }
 
-    private void OnSelectionChanged(object sender, SelectionChangedArgs e)
+    private void OnSelectionChanged(object? sender, SelectionChangedArgs e)
     {
         var start = e.SelectionRange.Start;
         var end = e.SelectionRange.End;

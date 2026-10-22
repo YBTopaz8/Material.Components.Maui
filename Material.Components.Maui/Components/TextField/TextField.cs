@@ -39,8 +39,8 @@ public class TextField
         this.Invalidate();
     }
 
-    public event EventHandler<TextChangedEventArgs> TextChanged;
-    public event EventHandler<EventArgs> TrailingIconClicked;
+    public event EventHandler<TextChangedEventArgs>? TextChanged;
+    public event EventHandler<EventArgs>? TrailingIconClicked;
 
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),
@@ -50,7 +50,7 @@ public class TextField
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as TextField;
-
+            if (view is null) return;
             if (view.Bounds.Width != -1)
             {
                 var size = view.GetLayoutSize((float)view.Bounds.Width);
@@ -83,7 +83,7 @@ public class TextField
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as TextField;
-            view.ChangeVisualState();
+            view?.ChangeVisualState();
         }
     );
 
@@ -133,7 +133,7 @@ public class TextField
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
 
-    public string Text
+    public string? Text
     {
         get => (string)this.GetValue(TextProperty);
         set => this.SetValue(TextProperty, value);
@@ -241,7 +241,7 @@ public class TextField
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -255,7 +255,7 @@ public class TextField
         set => this.SetValue(TrailingIconDataProperty, value);
     }
 
-    PathF ITrailingIconElement.TrailingIconPath { get; set; }
+    PathF? ITrailingIconElement.TrailingIconPath { get; set; }
 
     public Color TrailingIconColor
     {
@@ -314,7 +314,7 @@ public class TextField
         this.caretAnimationTimer.Tick += this.OnCaretAnimationTimerTick;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var x = this.LastTouchPoint.X;
         var y = this.LastTouchPoint.Y;
@@ -328,13 +328,13 @@ public class TextField
             TrailingIconClicked?.Invoke(this, e);
     }
 
-    private void OnEditorStartInteraction(object sender, TouchEventArgs e)
+    private void OnEditorStartInteraction(object? sender, TouchEventArgs e)
     {
         this.CaretInfo = this.GetCaretInfo((float)this.Bounds.Width, e.Touches[0]);
         this.SelectionRange = new(this.CaretInfo.Position);
     }
 
-    private void OnEditorDragInteraction(object sender, TouchEventArgs e)
+    private void OnEditorDragInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.isTouching)
             return;
@@ -342,13 +342,13 @@ public class TextField
         this.SelectionRange = new(this.SelectionRange.Start, caretInfo.Position);
     }
 
-    private void OnCaretAnimationTimerTick(object sender, EventArgs e)
+    private void OnCaretAnimationTimerTick(object? sender, EventArgs e)
     {
         this.IsDrawCaret = !this.IsDrawCaret;
         this.Invalidate();
     }
 
-    private void OnFocusChanged(object sender, FocusEventArgs e)
+    private void OnFocusChanged(object? sender, FocusEventArgs e)
     {
         if (e.IsFocused)
         {
@@ -394,7 +394,7 @@ public class TextField
             return;
         }
 
-        this.animationManager ??= this.Handler
+        this.animationManager ??= this.Handler?
             .MauiContext
             ?.Services
             .GetRequiredService<IAnimationManager>();
@@ -449,9 +449,8 @@ public class TextField
             && y <= this.Bounds.Center.Y + 20f
         )
         {
-            this.animationManager ??= this.Handler
-                .MauiContext
-                ?.Services
+            this.animationManager ??= this.Handler?
+                .MauiContext?.Services
                 .GetRequiredService<IAnimationManager>();
 
             this.animationManager?.Add(

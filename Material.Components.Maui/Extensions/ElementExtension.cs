@@ -2,7 +2,7 @@
 
 public static class ElementExtension
 {
-    public static T GetParentElement<T>(this Element view)
+    public static T? GetParentElement<T>(this Element view)
         where T : Element
     {
         

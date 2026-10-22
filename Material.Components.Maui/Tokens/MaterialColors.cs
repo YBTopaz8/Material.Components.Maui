@@ -103,8 +103,12 @@ public static class SchemeExtensions
         return result;
     }
 
-    public static Scheme<Color> GetScheme(this Color seedColor, AppTheme theme = AppTheme.Light)
+    public static Scheme<Color>? GetScheme(this Color? seedColor, AppTheme theme = AppTheme.Light)
     {
+        if(seedColor is null)
+        {
+            return null;
+        }
         var corePalette = CorePalette.Of(seedColor.ToUint());
         dynamic schemeMapper =
             theme is AppTheme.Dark ? new DarkSchemeMapper() : new LightSchemeMapper();
@@ -116,10 +120,15 @@ public static class SchemeExtensions
 
 public static class MaterialColors
 {
-    public static ResourceDictionary Colors =>
-        ResourceExtension.MaterialDictionaries.First(
+    public static ResourceDictionary Colors
+    {
+        get
+        {
+            return ResourceExtension.MaterialDictionaries!.First(
             x => x.GetType() == typeof(Styles.MaterialColors)
         );
+        }
+    }
 
     public static Color Primary => (Color)Colors["PrimaryColor"];
     public static Color PrimaryContainer => (Color)Colors["PrimaryContainerColor"];

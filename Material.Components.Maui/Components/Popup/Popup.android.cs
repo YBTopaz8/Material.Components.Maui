@@ -6,33 +6,41 @@ namespace Material.Components.Maui;
 
 public partial class Popup
 {
-    private Dialog container;
-    private Android.Views.View platformContent;
-    private Android.Views.View platformAnchor;
+    private Dialog? container;
+    private Android.Views.View? platformContent;
+    private Android.Views.View? platformAnchor;
 
-    public void PlatformShow(Page anchor)
+    public void PlatformShow(Page? anchor)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor?.Handler?.MauiContext;
+        if (context == null)
+        {
+            throw new InvalidOperationException("MauiContext is null.");
+        }
         if (this.container == null)
         {
             this.platformContent = this.Content.ToPlatform(context);
-            this.platformAnchor = anchor.ToPlatform(context);
-            this.container = new Dialog(this.platformAnchor.Context);
+            this.platformAnchor = anchor?.ToPlatform(context);
+            this.container = new Dialog(this.platformAnchor!.Context!);
             this.container.ShowEvent += (s, e) => this.Opened?.Invoke(this, EventArgs.Empty);
             this.container.DismissEvent += (s, e) => this.Close();
 
             this.container.SetCanceledOnTouchOutside(this.DismissOnOutside);
             this.container.SetContentView(this.platformContent);
-            this.container.Window.DecorView.SetPadding(0, 0, 0, 0);
-            this.container.Window.DecorView.SetBackgroundColor(Colors.Transparent.ToPlatform());
+            this.container.Window?.DecorView.SetPadding(0, 0, 0, 0);
+            this.container.Window?.DecorView.SetBackgroundColor(Colors.Transparent.ToPlatform());
         }
         var window = this.container.Window;
+        if(window == null)
+        {
+            throw new InvalidOperationException("Window is null.");
+        }
         window.DecorView.Measure(
             (int)MeasureSpecMode.Unspecified,
             (int)MeasureSpecMode.Unspecified
         );
-        window.Attributes.Width = window.DecorView.MeasuredWidth;
-        window.Attributes.Height = window.DecorView.MeasuredHeight;
+        window.Attributes?.Width = window.DecorView.MeasuredWidth;
+        window.Attributes?.Height = window.DecorView.MeasuredHeight;
 
         var gravity = this.HorizontalOptions switch
         {
@@ -48,13 +56,14 @@ public partial class Popup
         };
 
         window.SetGravity(gravity);
-        window.Attributes.X = this.OffsetX;
-        window.Attributes.Y = this.OffsetY;
+        window.Attributes?.X = this.OffsetX;
+        window.Attributes?.Y = this.OffsetY;
         this.container.Show();
     }
 
-    public void Close(object result = default)
+    public void Close(object? result = default)
     {
+        if (this.container is null) return;
         if (this.container.IsShowing)
         {
             this.container.Dismiss();
@@ -73,7 +82,13 @@ public partial class Popup
             if (disposing)
             {
                 this.Close();
-                this.container.Dispose();
+                if (this.container != null)
+                {
+                    this.container.DismissEvent -= (s, e) => this.Close();
+                    this.container.ShowEvent -= (s, e) => this.Opened?.Invoke(this, EventArgs.Empty);
+
+                    this.container.Dispose();
+                }
             }
 
             this.disposedValue = true;

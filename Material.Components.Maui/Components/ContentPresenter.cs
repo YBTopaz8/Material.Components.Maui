@@ -11,7 +11,7 @@ internal class ContentPresenter : Microsoft.Maui.Controls.ContentPresenter, IVis
             ((ContentPresenter)bo).OnContentChanged((View)oldValue, (View)newValue)
     );
 
-    public new View Content
+    public new View? Content
     {
         get => (View)this.GetValue(ContentProperty);
         set => this.SetValue(ContentProperty, value);
@@ -45,5 +45,5 @@ internal class ContentPresenter : Microsoft.Maui.Controls.ContentPresenter, IVis
             ? new List<IVisualTreeElement> { this.Content }
             : Array.Empty<IVisualTreeElement>().ToList();
 
-    public IVisualTreeElement GetVisualParent() => null;
+    public IVisualTreeElement? GetVisualParent() => null;
 }

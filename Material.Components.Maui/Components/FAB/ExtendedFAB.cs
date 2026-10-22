@@ -82,7 +82,7 @@ public class ExtendedFAB
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -103,7 +103,7 @@ public class ExtendedFAB
         this.Clicked += this.OnClicked;
     }
 
-    void OnClicked(object sender, TouchEventArgs e)
+    void OnClicked(object? sender, TouchEventArgs e)
     {
         if (this.Command?.CanExecute(this.CommandParameter) is true)
             this.Command?.Execute(this.CommandParameter);

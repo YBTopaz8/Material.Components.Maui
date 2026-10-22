@@ -34,9 +34,9 @@ public partial class ContextMenu
     public static readonly BindableProperty ShapeProperty = IShapeElement.ShapeProperty;
     public static readonly BindableProperty ElevationProperty = IElevationElement.ElevationProperty;
 
-    public ObservableCollection<MenuItem> Items
+    public ObservableCollection<MenuItem?> Items
     {
-        get => (ObservableCollection<MenuItem>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<MenuItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
@@ -66,7 +66,7 @@ public partial class ContextMenu
     }
 
     void IItemsElement<MenuItem>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -90,15 +90,15 @@ public partial class ContextMenu
         }
     }
 
-    private void OnMenuItemClicked(object sender, TouchEventArgs e)
+    private void OnMenuItemClicked(object? sender, TouchEventArgs e)
     {
         var item = sender as MenuItem;
-        item.ViewState = ViewState.Normal;
+        item?.ViewState = ViewState.Normal;
         this.Close(this.Items.IndexOf(item));
     }
 
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -123,16 +123,16 @@ public partial class ContextMenu
         }
     }
 
-    public object Result { get; private set; }
+    public object? Result { get; private set; }
 
-    public EventHandler<object> Closed;
+    public EventHandler<object?>? Closed;
 
-    private void OnClosed(object sender, object e)
+    private void OnClosed(object? sender, object e)
     {
         this.Closed?.Invoke(sender, this.Result ?? e);
     }
 
-    private Grid PART_Root;
+    private Grid? PART_Root;
 
     //private VerticalStackLayout PART_Stack;
 
@@ -176,6 +176,7 @@ public partial class ContextMenu
             var maxWidth = 0d;
             foreach (var item in this.Items)
             {
+                if(item is null) continue;
                 var (w, h) = item.GetDesiredSize();
                 maxWidth = Math.Max(maxWidth, w);
             }
@@ -190,7 +191,7 @@ public partial class ContextMenu
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
-        this.Items != null ? this.Items : Array.Empty<IVisualTreeElement>().ToList();
+        this.Items != null ? this.Items! : Array.Empty<IVisualTreeElement>().ToList();
 
     private bool disposedValue;
 
@@ -202,6 +203,7 @@ public partial class ContextMenu
             {
                 foreach (var item in this.Items)
                 {
+                    if(item is null) continue;
                     item.Clicked -= this.OnMenuItemClicked;
                 }
             }

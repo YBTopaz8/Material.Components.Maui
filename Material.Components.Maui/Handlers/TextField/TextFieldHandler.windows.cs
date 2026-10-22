@@ -6,7 +6,7 @@ namespace Material.Components.Maui.Handlers;
 
 public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField>
 {
-    EditableHandler editableHandler;
+    EditableHandler? editableHandler;
 
     protected override PlatformTextField CreatePlatformView()
     {
@@ -31,22 +31,22 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         handler.PlatformView?.UpdateDrawable(virtualView);
     }
 
-    public static void MapInvalidate(TextFieldHandler handler, TextField virtualView, object arg)
+    public static void MapInvalidate(TextFieldHandler handler, TextField virtualView, object? arg)
     {
         handler.PlatformView?.Invalidate();
     }
 
     static partial void MapText(TextFieldHandler handler, TextField virtualView)
     {
-        handler.editableHandler.UpdateText(virtualView.Text);
+        handler.editableHandler?.UpdateText(virtualView.Text);
     }
 
     static partial void MapFontAttributes(TextFieldHandler handler, TextField virtualView) { }
 
     static partial void MapSelectionRange(TextFieldHandler handler, TextField virtualView)
     {
-        if (!virtualView.SelectionRange.Equals(handler.editableHandler.SelectionRange))
-            handler.editableHandler.SelectionRange = virtualView.SelectionRange;
+        if (!virtualView.SelectionRange.Equals(handler.editableHandler?.SelectionRange))
+            handler.editableHandler?.SelectionRange = virtualView.SelectionRange;
     }
 
     static partial void MapFontSize(TextFieldHandler handler, TextField virtualView) { }

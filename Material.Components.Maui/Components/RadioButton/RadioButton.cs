@@ -25,12 +25,13 @@ public class RadioButton
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as RadioButton;
+            if (view is null) return;
             var index = (int)nv;
             if (index >= 0 && index < view.Items.Count)
                 view.SelectedItem = view.Items[index];
 
             for (var i = 0; i < view.Items.Count; i++)
-                view.Items[i].IsSelected = i == index;
+                view.Items[i]?.IsSelected = i == index;
 
             if (view.Command?.CanExecute(view.CommandParameter ?? index) is true)
                 view.Command?.Execute(view.CommandParameter ?? index);
@@ -46,12 +47,16 @@ public class RadioButton
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as RadioButton;
+            if (view is null) return;
             var item = (RadioItem)nv;
             if (view.Items.Contains(item))
                 view.SelectedIndex = view.Items.IndexOf(item);
 
             foreach (var ri in view.Items)
+            {
+                if(ri is null) continue;
                 ri.IsSelected = item.Equals(ri);
+            }
         }
     );
 
@@ -59,9 +64,9 @@ public class RadioButton
     public static readonly BindableProperty CommandParameterProperty =
         IICommandElement.CommandParameterProperty;
 
-    public ObservableCollection<RadioItem> Items
+    public ObservableCollection<RadioItem?> Items
     {
-        get => (ObservableCollection<RadioItem>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<RadioItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
@@ -72,12 +77,12 @@ public class RadioButton
     }
 
     void IItemsElement<RadioItem>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     ) { }
 
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -108,9 +113,9 @@ public class RadioButton
         set => this.SetValue(SelectedIndexProperty, value);
     }
 
-    public RadioItem SelectedItem
+    public RadioItem? SelectedItem
     {
-        get => (RadioItem)this.GetValue(SelectedItemProperty);
+        get => (RadioItem?)this.GetValue(SelectedItemProperty);
         set => this.SetValue(SelectedItemProperty, value);
     }
 
@@ -126,7 +131,7 @@ public class RadioButton
         set => this.SetValue(CommandParameterProperty, value);
     }
 
-    public event EventHandler<SelectedItemChangedEventArgs> SelectedChanged;
+    public event EventHandler<SelectedItemChangedEventArgs>? SelectedChanged;
 
     public RadioButton()
     {
@@ -134,16 +139,16 @@ public class RadioButton
         this.ChildRemoved += this.OnChildRemoved;
     }
 
-    private void OnChildAdded(object sender, ElementEventArgs e)
+    private void OnChildAdded(object? sender, ElementEventArgs e)
     {
         this.Items.Add((RadioItem)e.Element);
     }
 
-    private void OnChildRemoved(object sender, ElementEventArgs e)
+    private void OnChildRemoved(object? sender, ElementEventArgs e)
     {
         this.Items.Remove((RadioItem)e.Element);
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
-        this.Items != null ? this.Items : Array.Empty<IVisualTreeElement>().ToList();
+        this.Items != null ? this.Items! : Array.Empty<IVisualTreeElement>().ToList();
 }

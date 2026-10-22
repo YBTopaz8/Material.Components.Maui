@@ -83,14 +83,14 @@ public class NavigationDrawerItem
     public static readonly BindableProperty IconDataProperty = IIconElement.IconDataProperty;
     public static readonly BindableProperty IconColorProperty = IIconElement.IconColorProperty;
 
-    public View Content
+    public View? Content
     {
         get
         {
-            var result = (View)this.GetValue(ContentProperty);
+            var result = (View?)this.GetValue(ContentProperty);
             if (result == null && this.ContentType != null)
             {
-                result = (View)Activator.CreateInstance(this.ContentType);
+                result = (View?)Activator.CreateInstance(this.ContentType);
                 this.SetValue(ContentProperty, result);
             }
             return result;
@@ -152,7 +152,7 @@ public class NavigationDrawerItem
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -166,10 +166,10 @@ public class NavigationDrawerItem
         this.Clicked += this.OnClicked;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var navDrawer = this.GetParentElement<NavigationDrawer>();
-        navDrawer.SelectedItem = this;
+        navDrawer?.SelectedItem = this;
 
         if (this.GetParentElement<Popup>() is Popup popup)
             popup.Close();

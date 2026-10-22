@@ -91,14 +91,14 @@ public class TabItem
         propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
     );
 
-    public View Content
+    public View? Content
     {
         get
         {
-            var result = (View)this.GetValue(ContentProperty);
+            var result = (View?)this.GetValue(ContentProperty);
             if (result == null && this.ContentType != null)
             {
-                result = (View)Activator.CreateInstance(this.ContentType);
+                result = (View?)Activator.CreateInstance(this.ContentType);
                 this.SetValue(ContentProperty, result);
             }
             return result;
@@ -154,7 +154,7 @@ public class TabItem
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -188,32 +188,33 @@ public class TabItem
         this.Clicked += this.OnClicked;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var tabs = this.GetParentElement<Tabs>();
-        tabs.SelectedItem = this;
+        tabs?.SelectedItem = this;
     }
 
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
     {
         var height = 48f;
         var tabs = this.GetParentElement<Tabs>();
+        var itemStyle = tabs?.ItemStyle ?? ItemStyle.Primary;
+        var measuredWidth = this.GetStringSize().Width + 64f;
 
-        if (tabs.ItemStyle is ItemStyle.ScrollingPrimary)
-            widthConstraint = this.GetStringSize().Width + 64f;
-        else if (tabs.ItemStyle is ItemStyle.ScrollingSecondary)
-            widthConstraint =
-                (((IIconElement)this).IconPath is not null ? 24f : 0f)
-                + this.GetStringSize().Width
-                + 80f;
+        if (itemStyle is ItemStyle.ScrollingSecondary)
+        {
+            measuredWidth = (((IIconElement)this).IconPath is not null ? 24f : 0f) + this.GetStringSize().Width + 80f;
+        }
 
-        if (
-            tabs.ItemStyle is ItemStyle.Primary or ItemStyle.ScrollingPrimary
-            && ((IIconElement)this).IconPath is not null
-        )
+        if (itemStyle is ItemStyle.Primary or ItemStyle.ScrollingPrimary && ((IIconElement)this).IconPath is not null)
+        {
             height = 64f;
+        }
 
-        this.DesiredSize = new Size(widthConstraint, height);
+
+        var finalWidth = double.IsInfinity(widthConstraint) ? measuredWidth : widthConstraint;
+
+        this.DesiredSize = new Size(Math.Ceiling(finalWidth), height);
         return this.DesiredSize;
     }
 

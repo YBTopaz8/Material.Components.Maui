@@ -22,10 +22,15 @@ internal class SegmentedButtonDrawable(SegmentedButton view) : IDrawable, IDispo
 
         for (var i = 0; i < view.Items.Count; i++)
         {
+            var itm = view.Items[i];
+            if (itm is null)
+            {
+                continue;
+            }
             this.DrawItem(
                 canvas,
                 new RectF(itemWidth * i, rect.Top, itemWidth, rect.Height),
-                view.Items[i]
+                itm
             );
         }
 

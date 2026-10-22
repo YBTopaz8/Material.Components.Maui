@@ -28,13 +28,19 @@ public class SegmentedButton
             for (var i = 0; i < this.Items.Count; i++)
             {
                 var item = this.Items[i];
-                item.ViewState = i == index ? this.ViewState : ViewState.Normal;
-            }
+                if (item is not null)
+                {
+
+                    item.ViewState = i == index ? this.ViewState : ViewState.Normal;
+                }            }
         }
         else
         {
             foreach (var item in this.Items)
-                item.ViewState = this.ViewState;
+            { 
+                if(item is not null)
+                    item.ViewState = this.ViewState; 
+            }
         }
     }
 
@@ -75,9 +81,9 @@ public class SegmentedButton
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
 
-    public ObservableCollection<SegmentedItem> Items
+    public ObservableCollection<SegmentedItem?> Items
     {
-        get => (ObservableCollection<SegmentedItem>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<SegmentedItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
@@ -88,7 +94,7 @@ public class SegmentedButton
     }
 
     void IItemsElement<SegmentedItem>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -120,7 +126,7 @@ public class SegmentedButton
     }
 
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -195,6 +201,7 @@ public class SegmentedButton
         {
             foreach (var item in this.Items)
             {
+                if(item is null) continue;
                 if (item.IsSelected)
                 {
                     yield return item;
@@ -203,7 +210,7 @@ public class SegmentedButton
         }
     }
 
-    public event EventHandler<SelectedItemsChangedArgs<SegmentedItem>> SelectedItemsChanged;
+    public event EventHandler<SelectedItemsChangedArgs<SegmentedItem>>? SelectedItemsChanged;
 
     public SegmentedButton()
     {
@@ -212,13 +219,13 @@ public class SegmentedButton
         this.Drawable = new SegmentedButtonDrawable(this);
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var index = (int)(this.LastTouchPoint.X / (this.Bounds.Width / this.Items.Count));
-        this.Items[index].IsSelected = !this.Items[index].IsSelected;
+        this.Items[index]?.IsSelected = this.Items[index] is null ? !this.Items[index]!.IsSelected : false;
     }
 
-    protected override void OnMoveHoverInteraction(object sender, TouchEventArgs e)
+    protected override void OnMoveHoverInteraction(object? sender, TouchEventArgs e)
     {
         this.LastTouchPoint = e.Touches[0];
         this.ChangeVisualState();
@@ -230,6 +237,7 @@ public class SegmentedButton
         {
             foreach (var _item in this.Items)
             {
+                if(_item is null) continue;
                 if (!_item.Equals(item))
                 {
                     _item.IsSelected = false;
@@ -262,6 +270,7 @@ public class SegmentedButton
 
         foreach (var item in this.Items)
         {
+            if(item is null) continue;
             var iconSize = 18f * scale;
             var textSize = this.GetStringSize(item.Text);
             //16 + iconSize + 8 + textSize.Width + 16
@@ -296,7 +305,7 @@ public class SegmentedButton
         return this.DesiredSize;
     }
 
-    public IReadOnlyList<IVisualTreeElement> GetVisualChildren() => this.Items.ToList();
+    public IReadOnlyList<IVisualTreeElement> GetVisualChildren() => this.Items.ToList()!;
 
     protected override void Dispose(bool disposing)
     {

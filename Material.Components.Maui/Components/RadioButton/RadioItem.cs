@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-public class RadioItem
+public partial class RadioItem
     : TouchGraphicsView,
         ITextElement,
         IFontElement,
@@ -80,10 +80,10 @@ public class RadioItem
         this.Clicked += this.OnClicked;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var rb = this.GetParentElement<RadioButton>();
-        rb.SelectedItem = this;
+        rb?.SelectedItem = this;
     }
 
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)

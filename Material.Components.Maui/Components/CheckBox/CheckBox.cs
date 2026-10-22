@@ -68,7 +68,7 @@ public class CheckBox
         get => (string)this.GetValue(IconDataProperty);
         set => this.SetValue(IconDataProperty, value);
     }
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -82,7 +82,7 @@ public class CheckBox
         set => this.SetValue(IsCheckedProperty, value);
     }
 
-    event EventHandler<CheckedChangedEventArgs> CheckedChanged;
+    event EventHandler<CheckedChangedEventArgs>? CheckedChanged;
 
     public CheckBox()
     {
@@ -90,7 +90,7 @@ public class CheckBox
         this.EndInteraction += this.OnCheckChanged;
     }
 
-    private void OnCheckChanged(object sender, TouchEventArgs e)
+    private void OnCheckChanged(object? sender, TouchEventArgs e)
     {
         this.IsChecked = !this.IsChecked;
     }

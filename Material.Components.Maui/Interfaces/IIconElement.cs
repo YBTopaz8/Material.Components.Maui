@@ -3,7 +3,7 @@ namespace Material.Components.Maui.Interfaces;
 public interface IIconElement : IElement, IDisposable
 {
     string IconData { get; set; }
-    PathF IconPath { get; set; }
+    PathF? IconPath { get; set; }
     Color IconColor { get; set; }
 
     public static readonly BindableProperty IconDataProperty = BindableProperty.Create(

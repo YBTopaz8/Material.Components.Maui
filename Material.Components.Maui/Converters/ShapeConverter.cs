@@ -5,9 +5,9 @@ namespace Material.Components.Maui.Converters;
 
 public class ShapeConverter : TypeConverter
 {
-    public override object ConvertFrom(
-        ITypeDescriptorContext context,
-        CultureInfo culture,
+    public override object? ConvertFrom(
+        ITypeDescriptorContext? context,
+        CultureInfo? culture,
         object value
     )
     {
@@ -77,7 +77,7 @@ public class ShapeConverter : TypeConverter
         "Full",
     ];
 
-    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
     {
         return new(values);
     }

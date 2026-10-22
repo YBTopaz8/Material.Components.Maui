@@ -6,7 +6,7 @@ namespace Material.Components.Maui.Interfaces;
 public interface IItemsSourceElement
 {
     IList ItemsSource { get; set; }
-    void OnItemsSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e);
+    void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e);
 
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(
         nameof(ItemsSource),

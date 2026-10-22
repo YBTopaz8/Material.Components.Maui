@@ -13,10 +13,10 @@ public static class IActiveIndicatorElementExtension
         this TBindable view,
         string path,
         BindingMode mode = BindingMode.Default,
-        IValueConverter converter = null,
-        object converterParameter = null,
-        string stringFormat = null,
-        object source = null
+        IValueConverter? converter = null,
+        object? converterParameter = null,
+        string? stringFormat = null,
+        object? source = null
     )
         where TBindable : BindableObject, IActiveIndicatorElement
     {
@@ -36,10 +36,10 @@ public static class IActiveIndicatorElementExtension
         this TBindable view,
         string path,
         BindingMode mode = BindingMode.Default,
-        IValueConverter converter = null,
-        object converterParameter = null,
-        string stringFormat = null,
-        object source = null
+        IValueConverter? converter = null,
+        object? converterParameter = null,
+        string? stringFormat = null,
+        object? source = null
     )
         where TBindable : BindableObject, IActiveIndicatorElement
     {

@@ -9,19 +9,22 @@ namespace Material.Components.Maui;
 
 public partial class Popup
 {
-    private WPopup container;
-    private ContentPanel platformAnchor;
-    private FrameworkElement platformOutside;
+    private WPopup? container;
+    private ContentPanel? platformAnchor;
+    private FrameworkElement? platformOutside;
 
-    private void PlatformShow(Page anchor)
+    private void PlatformShow(Page? anchor)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor?.Handler?.MauiContext;
+        if(context == null)
+            throw new InvalidOperationException("MauiContext is null. Ensure the anchor page has been properly initialized.");
         var platformContent = this.Content.ToPlatform(context);
 
         if (this.container == null)
         {
-            this.platformAnchor = anchor.ToPlatform(context) as ContentPanel;
-
+            var anch = anchor?.ToPlatform(context) as ContentPanel;
+            if (anch is not null)
+                this.platformAnchor = anch;
             var outside = new Grid
             {
                 HorizontalOptions = LayoutOptions.Fill,
@@ -49,7 +52,7 @@ public partial class Popup
                 LightDismissOverlayMode = LightDismissOverlayMode.Off,
             };
 
-            this.platformAnchor.Children.Add(this.container);
+            this.platformAnchor!.Children.Add(this.container);
 
             this.container.Opened += this.OnContainerOpened;
             this.container.Closed += this.OnContainerClosed;
@@ -106,16 +109,16 @@ public partial class Popup
             + this.HorizontalOptions switch
             {
                 LayoutAlignment.Start => 0,
-                LayoutAlignment.End => this.platformAnchor.ActualWidth - size.Width,
-                _ => (this.platformAnchor.ActualWidth - size.Width) / 2
+                LayoutAlignment.End => this.platformAnchor?.ActualWidth ?? 0 - size.Width,
+                _ => (this.platformAnchor?.ActualWidth ?? 0 - size.Width) / 2
             };
         var y =
             this.OffsetY
             + this.VerticalOptions switch
             {
                 LayoutAlignment.Start => 0,
-                LayoutAlignment.End => this.platformAnchor.ActualHeight - size.Height,
-                _ => (this.platformAnchor.ActualHeight - size.Height) / 2
+                LayoutAlignment.End => this.platformAnchor?.ActualHeight ?? 0 - size.Height,
+                _ => (this.platformAnchor?.ActualHeight ?? 0 - size.Height) / 2
             };
 
         this.Content.SetValue(
@@ -131,13 +134,14 @@ public partial class Popup
             this.Close();
     }
 
-    private void OnContainerClosed(object sender, object e) => this.Close();
+    private void OnContainerClosed(object? sender, object e) => this.Close();
 
-    private void OnContainerOpened(object sender, object e) =>
+    private void OnContainerOpened(object? sender, object e) =>
         this.Opened?.Invoke(this, EventArgs.Empty);
 
-    public void Close(object result = null)
+    public void Close(object? result = null)
     {
+        if (this.container is null) return;
         if (this.container.IsOpen)
             this.container.IsOpen = false;
 
@@ -155,10 +159,10 @@ public partial class Popup
             if (disposing)
             {
                 this.Close();
-                this.platformOutside.Tapped -= this.OnOutsideTapped;
-                this.container.Opened -= this.OnContainerOpened;
-                this.container.Closed -= this.OnContainerClosed;
-                this.platformAnchor.Children.Remove(this.container);
+                this.platformOutside?.Tapped -= this.OnOutsideTapped;
+                this.container?.Opened -= this.OnContainerOpened;
+                this.container?.Closed -= this.OnContainerClosed;
+                this.platformAnchor?.Children.Remove(this.container);
             }
             this.disposedValue = true;
         }

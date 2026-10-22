@@ -3,7 +3,7 @@ namespace Material.Components.Maui.Interfaces;
 public interface ITrailingIconElement : IElement, IDisposable
 {
     string TrailingIconData { get; set; }
-    PathF TrailingIconPath { get; set; }
+    PathF? TrailingIconPath { get; set; }
     Color TrailingIconColor { get; set; }
 
     public static readonly BindableProperty TrailingIconDataProperty = BindableProperty.Create(

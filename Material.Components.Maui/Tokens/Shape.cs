@@ -63,7 +63,7 @@ public readonly struct Shape(float topLeft, float topRight, float bottomLeft, fl
             || left.BottomRight != right.BottomRight;
     }
 
-    public override bool Equals([NotNullWhen(true)] object obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return base.Equals(obj);
     }

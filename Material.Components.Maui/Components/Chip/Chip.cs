@@ -44,10 +44,10 @@ public class Chip
         propertyChanged: (bo, ov, nv) =>
         {
             var view = bo as Chip;
-            view.ChangeVisualState();
-            view.SelectedChanged?.Invoke(view, new((bool)nv));
+            view?.ChangeVisualState();
+            view?.SelectedChanged?.Invoke(view, new((bool)nv));
 
-            if (view.Command?.CanExecute(view.CommandParameter ?? nv) is true)
+            if (view?.Command?.CanExecute(view.CommandParameter ?? nv) is true)
                 view.Command?.Execute(view.CommandParameter ?? nv);
         }
     );
@@ -127,7 +127,7 @@ public class Chip
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -151,10 +151,10 @@ public class Chip
         set => this.SetValue(ElevationProperty, value);
     }
 
-    public event EventHandler<EventArgs> Closed;
-    public event EventHandler<CheckedChangedEventArgs> SelectedChanged;
+    public event EventHandler<EventArgs>? Closed;
+    public event EventHandler<CheckedChangedEventArgs>? SelectedChanged;
 
-    protected IFontManager fontManager;
+    protected IFontManager? fontManager;
 
     public Chip()
     {
@@ -207,7 +207,7 @@ public class Chip
         return this.DesiredSize;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         if (this.HasCloseButton)
         {

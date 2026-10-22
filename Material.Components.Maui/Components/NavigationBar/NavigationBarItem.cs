@@ -78,14 +78,14 @@ public class NavigationBarItem
     public static readonly BindableProperty ActiveIndicatorColorProperty =
         IActiveIndicatorElement.ActiveIndicatorColorProperty;
 
-    public View Content
+    public View? Content
     {
         get
         {
             var result = (View)this.GetValue(ContentProperty);
             if (result == null && this.ContentType != null)
             {
-                result = (View)Activator.CreateInstance(this.ContentType);
+                result = (View?)Activator.CreateInstance(this.ContentType);
                 this.SetValue(ContentProperty, result);
             }
             return result;
@@ -141,7 +141,7 @@ public class NavigationBarItem
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
@@ -169,10 +169,10 @@ public class NavigationBarItem
         this.Clicked += this.OnClicked;
     }
 
-    private void OnClicked(object sender, TouchEventArgs e)
+    private void OnClicked(object? sender, TouchEventArgs e)
     {
         var navBar = this.GetParentElement<NavigationBar>();
-        navBar.SelectedItem = this;
+        navBar?.SelectedItem = this;
     }
 
     protected override float GetRippleSize()

@@ -22,7 +22,7 @@ internal static class IEditableElementExtension
         var style = element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
         var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
 
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context!.Resources!.DisplayMetrics!.Density;
 
         using var textPaint = new TextPaint { TextSize = element.FontSize * density };
         textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
@@ -30,7 +30,12 @@ internal static class IEditableElementExtension
         if (string.IsNullOrEmpty(text))
         {
             var fontMetrics = textPaint.GetFontMetrics();
-            return new SizeF(0f, (fontMetrics.Bottom - fontMetrics.Top) / density);
+            float height = 0f;
+            if (fontMetrics is not null)
+            {
+                height = (fontMetrics.Bottom - fontMetrics.Top);
+            }
+                return new SizeF(0f, height / density);
         }
 
         using var bounds = new Android.Graphics.Rect();
@@ -70,7 +75,7 @@ internal static class IEditableElementExtension
         var style = element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
         var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
 
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 
         using var textPaint = new TextPaint { TextSize = element.FontSize * density };
         textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
@@ -81,7 +86,8 @@ internal static class IEditableElementExtension
             result.Position = 0;
             result.X = 0;
             result.Y = 0;
-            result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
+            if(fontMetrics is not null)
+                result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
             return result;
         }
 
@@ -152,7 +158,8 @@ internal static class IEditableElementExtension
                 result.Position = 0;
                 result.X = 0;
                 result.Y = 0;
-                result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
+                if (fontMetrics is not null)
+                    result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
             }
         }
 
@@ -173,7 +180,7 @@ internal static class IEditableElementExtension
         var style = element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
         var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
 
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 
         using var textPaint = new TextPaint { TextSize = element.FontSize * density };
         textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
@@ -189,7 +196,8 @@ internal static class IEditableElementExtension
                         ? maxWidth / 2 + 2
                         : 0;
             result.Y = 0;
-            result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
+            if (fontMetrics is not null)
+                result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
             return result;
         }
 
@@ -226,7 +234,8 @@ internal static class IEditableElementExtension
             result.Position = 0;
             result.X = 0;
             result.Y = 0;
-            result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
+            if (fontMetrics is not null)
+                result.Height = (fontMetrics.Bottom - fontMetrics.Top) / density;
         }
 
         return result;
@@ -242,7 +251,7 @@ internal static class IEditableElementExtension
         var style = element.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal;
         var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
 
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 
         using var textPaint = new TextPaint { TextSize = element.FontSize * density };
         textPaint.SetTypeface(font.ToTypeface() ?? Typeface.Default);
@@ -292,12 +301,13 @@ internal static class IEditableElementExtension
     public static StaticLayout CreateStaticLayout<TElement>(this TElement element,
         TextPaint paint,
         float width,
-        Android.Text.Layout.Alignment alignment
+        Android.Text.Layout.Alignment? alignment
     ) where TElement : IEditableElement
     {
 
-        var text = element.InputType is InputType.Password ? new string('•', element.Text.Length) : element.Text;
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var text = element.InputType is InputType.Password ? new string('•', element.Text!.Length) : element.Text;
+        text ??= string.Empty;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 
         StaticLayout layout;
 
@@ -312,7 +322,10 @@ internal static class IEditableElementExtension
                 paint,
                 (int)(width * density)
             );
-            layoutBuilder.SetAlignment(alignment);
+            if(alignment is not null)
+            {
+                layoutBuilder.SetAlignment(alignment);
+            }
             layout = layoutBuilder.Build();
 
         }
@@ -334,7 +347,7 @@ internal static class IEditableElementExtension
 
         var width = maxWidth - (float)element.EditablePadding.HorizontalThickness;
         var text = element.Text ?? "";
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context!.Resources!.DisplayMetrics!.Density;
 
         var font = new Microsoft.Maui.Graphics.Font(
             element.FontFamily, (int)element.FontWeight,
@@ -368,7 +381,7 @@ internal static class IEditableElementExtension
         if (range.End == textLength) return element.GetCaretInfo(maxWidth, textLength);
 
         var width = maxWidth - (float)element.EditablePadding.HorizontalThickness;
-        var density = Android.App.Application.Context.Resources.DisplayMetrics.Density;
+        var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 
         var font = new Microsoft.Maui.Graphics.Font(
             element.FontFamily, (int)element.FontWeight,
@@ -399,7 +412,7 @@ internal static class IEditableElementExtension
     {
         if (editor.Handler?.PlatformView is PlatformTextField pv)
         {
-            var inputMethodManager = (InputMethodManager)
+            var inputMethodManager = (InputMethodManager?)
                 pv.Context?.GetSystemService(Context.InputMethodService);
             if (
                 inputMethodManager is not null
@@ -438,8 +451,9 @@ internal static class IEditableElementExtension
         {
             var focusedView = pv.Context?.GetActivity()?.Window?.CurrentFocus;
             var tokenView = focusedView ?? pv;
-            var inputMethodManager = (InputMethodManager)
+            var inputMethodManager = (InputMethodManager?)
                 tokenView.Context?.GetSystemService(Context.InputMethodService);
+            if (inputMethodManager is null) return false;
             var windowToken = tokenView.WindowToken;
             if (
                 inputMethodManager.InvokeIsActive(tokenView)

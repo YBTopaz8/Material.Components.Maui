@@ -45,6 +45,7 @@ public class ComboBox
         propertyChanged: (bo, ov, nv) =>
         {
             var comboBox = bo as ComboBox;
+            if (comboBox is null) return;
             var index = (int)nv;
             if (index >= 0 && index < comboBox.Items.Count)
                 comboBox.SelectedItem = comboBox.Items[index];
@@ -64,6 +65,7 @@ public class ComboBox
         propertyChanged: (bo, ov, nv) =>
         {
             var comboBox = bo as ComboBox;
+            if(comboBox is null) return;
             var item = (MenuItem)nv;
             if (comboBox.Items.Contains(item))
                 comboBox.SelectedIndex = comboBox.Items.IndexOf(item);
@@ -91,9 +93,9 @@ public class ComboBox
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
 
-    public ObservableCollection<MenuItem> Items
+    public ObservableCollection<MenuItem?> Items
     {
-        get => (ObservableCollection<MenuItem>)this.GetValue(ItemsProperty);
+        get => (ObservableCollection<MenuItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
 
@@ -104,13 +106,13 @@ public class ComboBox
     }
 
     void IItemsElement<MenuItem>.OnItemsCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
         if (e.OldItems != null)
         {
-            foreach (MenuItem item in e.OldItems)
+            foreach (MenuItem? item in e.OldItems)
             {
                 this.menu.Items.Remove(item);
             }
@@ -129,7 +131,7 @@ public class ComboBox
     }
 
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
-        object sender,
+        object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
@@ -160,9 +162,9 @@ public class ComboBox
         set => this.SetValue(SelectedIndexProperty, value);
     }
 
-    public MenuItem SelectedItem
+    public MenuItem? SelectedItem
     {
-        get => (MenuItem)this.GetValue(SelectedItemProperty);
+        get => (MenuItem?)this.GetValue(SelectedItemProperty);
         set => this.SetValue(SelectedItemProperty, value);
     }
 
@@ -239,7 +241,7 @@ public class ComboBox
         set => this.SetValue(OutlineWidthProperty, value);
     }
 
-    public event EventHandler<SelectedItemChangedEventArgs> SelectedChanged;
+    public event EventHandler<SelectedItemChangedEventArgs>? SelectedChanged;
 
     bool isDropDown = false;
     internal bool IsDropDown
@@ -267,7 +269,7 @@ public class ComboBox
         this.menu.Closed += this.OnMenuClosed;
     }
 
-    protected void OnClicked(object sender, TouchEventArgs e)
+    protected void OnClicked(object? sender, TouchEventArgs e)
     {
         this.IsDropDown = true;
 
@@ -278,7 +280,7 @@ public class ComboBox
         this.menu.Show(this);
     }
 
-    private void OnMenuClosed(object sender, object e)
+    private void OnMenuClosed(object? sender, object? e)
     {
         this.IsDropDown = false;
         this.StartLabelTextAnimation();
@@ -294,7 +296,7 @@ public class ComboBox
             return;
         }
 
-        this.animationManager ??= this.Handler
+        this.animationManager ??= this.Handler?
             .MauiContext
             ?.Services
             .GetRequiredService<IAnimationManager>();
@@ -344,7 +346,7 @@ public class ComboBox
         foreach (var item in this.Items)
         {
             
-            var size = this.GetStringSize(item.Text);
+            var size = this.GetStringSize(item?.Text);
             if (size.Width > result.Width)
                 result.Width = size.Width;
         }
@@ -394,7 +396,7 @@ public class ComboBox
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
-        this.Items != null ? this.Items : Array.Empty<IVisualTreeElement>().ToList();
+        this.Items != null ? this.Items! : Array.Empty<IVisualTreeElement>().ToList();
 
 
 }

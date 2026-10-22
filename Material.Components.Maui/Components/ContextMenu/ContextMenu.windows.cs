@@ -7,8 +7,8 @@ namespace Material.Components.Maui;
 public partial class ContextMenu
 {
     private static readonly Microsoft.UI.Xaml.Style flyoutStyle;
-    private Flyout container;
-    private FrameworkElement platformAnchor;
+    private Flyout? container;
+    private FrameworkElement? platformAnchor;
 
     static ContextMenu()
     {
@@ -29,7 +29,8 @@ public partial class ContextMenu
 
     private void PlatformShow(View anchor)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor.Handler?.MauiContext;
+        if (context is null) return;
         var platformContent = this.ToPlatform(context);
         if (this.container == null)
         {
@@ -50,7 +51,8 @@ public partial class ContextMenu
 
     private void PlatformShow(View anchor, Point point)
     {
-        var context = anchor.Handler.MauiContext;
+        var context = anchor.Handler?.MauiContext;
+        if(context is null) return;
         var platformContent = this.ToPlatform(context);
         if (this.container == null)
         {
@@ -86,7 +88,7 @@ public partial class ContextMenu
         );
     }
 
-    public void Close(object result = null)
+    public void Close(object? result = null)
     {
         this.Result = result;
         if(container is not null)

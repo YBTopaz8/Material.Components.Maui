@@ -2,7 +2,7 @@
 
 public interface IContentElement : IElement
 {
-    View Content { get; }
+    View? Content { get; }
 
     public static readonly BindableProperty ContentProperty = BindableProperty.Create(
         nameof(Content),

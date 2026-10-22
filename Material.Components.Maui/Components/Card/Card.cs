@@ -87,7 +87,7 @@ public class Card
         set => this.SetValue(ElevationProperty, value);
     }
 
-    Grid PART_Root;
+    Grid? PART_Root;
 
     public Card()
     {

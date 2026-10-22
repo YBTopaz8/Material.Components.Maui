@@ -75,7 +75,7 @@ public class SegmentedItem
         typeof(ITextElement),
         default,
         propertyChanged: (bo, ov, nv) =>
-            ((IElement)((SegmentedItem)bo)?.Parent)?.InvalidateMeasure()
+            ((IElement?)((SegmentedItem)bo)?.Parent)?.InvalidateMeasure()
     );
 
     public static readonly BindableProperty IconDataProperty = IIconElement.IconDataProperty;
@@ -114,7 +114,7 @@ public class SegmentedItem
         set => this.SetValue(IconDataProperty, value);
     }
 
-    PathF IIconElement.IconPath { get; set; }
+    PathF? IIconElement.IconPath { get; set; }
 
     public Color IconColor
     {
