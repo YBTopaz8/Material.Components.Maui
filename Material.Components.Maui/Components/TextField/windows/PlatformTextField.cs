@@ -63,12 +63,45 @@ public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
     public void UpdateInputType(InputType type)
     {
         this.InputType = type;
+
+        // Tell Windows Input System / Touch Keyboard what kind of input this is!
+        if (this.EditContext != null)
+        {
+            this.EditContext.InputScope = type switch
+            {
+                InputType.Numeric => CoreTextInputScope.Number,
+                InputType.DecimalNumber => CoreTextInputScope.Number,
+                InputType.Password => CoreTextInputScope.Password,
+                _ => CoreTextInputScope.Text
+            };
+        }
     }
+
 
     protected override void OnCharacterReceived(CharacterReceivedRoutedEventArgs e)
     {
+        // 1. Respect Handled!
+        if (e.Handled) return;
+
         if (this.FocusState != FocusState.Unfocused && !char.IsControl(e.Character))
         {
+            // 2. Gatekeeper: Drop letters if Numeric!
+            if (this.InputType is InputType.Numeric && !char.IsDigit(e.Character))
+            {
+                e.Handled = true;
+                return; // STOP: Do not commit!
+            }
+
+            // 3. Gatekeeper: Drop letters if Decimal (allow digits and . or ,)
+            if (this.InputType is InputType.DecimalNumber)
+            {
+                bool isDecimalChar = e.Character == '.' || e.Character == ',';
+                if (!char.IsDigit(e.Character) && !isDecimalChar)
+                {
+                    e.Handled = true;
+                    return; // STOP: Do not commit!
+                }
+            }
 
             this.editableHandler.CommitText(e.Character.ToString());
         }
@@ -86,7 +119,31 @@ public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
 
         if (e.Key == VirtualKey.Back)
         {
-            this.editableHandler.DeleteText();
+            if (isCtrlPressed)
+                this.editableHandler.DeleteWordLeft(); // Ctrl + Backspace
+            else
+                this.editableHandler.DeleteText();     // Normal Backspace
+        }
+        else if (e.Key == VirtualKey.Delete)
+        {
+            if (isCtrlPressed)
+                this.editableHandler.DeleteWordRight(); // Ctrl + Delete
+            else
+                this.editableHandler.DeleteForward();   // Normal Forward Delete
+        }
+        else if (e.Key == VirtualKey.Home)
+        {
+            if (isShiftPressed)
+                this.editableHandler.Navigate(NavigationKind.SelectHome); // Shift + Home
+            else
+                this.editableHandler.Navigate(NavigationKind.Home);       // Home
+        }
+        else if (e.Key == VirtualKey.End)
+        {
+            if (isShiftPressed)
+                this.editableHandler.Navigate(NavigationKind.SelectEnd);  // Shift + End
+            else
+                this.editableHandler.Navigate(NavigationKind.End);        // End
         }
         else if (e.Key == VirtualKey.Enter)
         {
@@ -193,15 +250,46 @@ public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
         );
     }
 
+
     private void OnEditContextTextUpdating(
         CoreTextEditContext sender,
         CoreTextTextUpdatingEventArgs args
     )
     {
         if (!string.IsNullOrWhiteSpace(args.Text))
-            this.editableHandler.CommitText(args.Text);
-    }
+        {
+            // Gatekeeper for Windows IME / EditContext
+            if (this.InputType is InputType.Numeric && !args.Text.All(char.IsDigit))
+            {
+                args.Result = CoreTextTextUpdatingResult.Failed;
+                return;
+            }
 
+            if (this.InputType is InputType.DecimalNumber && !args.Text.All(c => char.IsDigit(c) || c == '.' || c == ','))
+            {
+                args.Result = CoreTextTextUpdatingResult.Failed;
+                return;
+            }
+
+            this.editableHandler.CommitText(args.Text);
+        }
+    }
+    protected override void OnDoubleTapped(DoubleTappedRoutedEventArgs e)
+    {
+        base.OnDoubleTapped(e);
+
+        // 1. Get the mouse click position
+        var winPoint = e.GetPosition(this);
+        var point = new Microsoft.Maui.Graphics.PointF((float)winPoint.X, (float)winPoint.Y);
+
+        // 2. Hit-test the canvas text layout to get the character index under the cursor
+        var caretInfo = this.editableHandler.editor.GetCaretInfo((float)this.ActualWidth, point);
+
+        // 3. Select the word at that index!
+        this.editableHandler.SelectWordAt(caretInfo.Position);
+
+        e.Handled = true;
+    }
     Rect lastEditContextLayoutRequestRect = Rect.Empty;
     int lastCaretPositon;
 

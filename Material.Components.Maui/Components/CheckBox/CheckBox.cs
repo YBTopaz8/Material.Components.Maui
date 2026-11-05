@@ -29,7 +29,12 @@ public class CheckBox
 
         this.Invalidate();
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static readonly BindableProperty IconDataProperty = IIconElement.IconDataProperty;
     public static readonly BindableProperty IconColorProperty = IIconElement.IconColorProperty;
     public static readonly BindableProperty OutlineWidthProperty =
@@ -51,9 +56,9 @@ public class CheckBox
         }
     );
 
-    public Color OutlineColor
+    public Color? OutlineColor
     {
-        get => (Color)this.GetValue(OutlineColorProperty);
+        get => (Color?)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
     }
 

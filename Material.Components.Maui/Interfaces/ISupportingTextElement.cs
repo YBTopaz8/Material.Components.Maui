@@ -9,7 +9,7 @@ public interface ISupportingTextElement : IElement
         nameof(SupportingText),
         typeof(string),
         typeof(ISupportingTextElement),
-        "Supporting text",
+        string.Empty,
         propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
     );
 

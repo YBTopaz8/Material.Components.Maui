@@ -4,5 +4,7 @@ public enum InputType
 {
     None,
     SingleLine,
-    Password
+    Password,
+    Numeric,       // 0-9 only
+    DecimalNumber  // 0-9 and decimal separator (. or ,)
 }

@@ -38,7 +38,12 @@ public class TextField
 
         this.Invalidate();
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public event EventHandler<TextChangedEventArgs>? TextChanged;
     public event EventHandler<EventArgs>? TrailingIconClicked;
 
@@ -281,7 +286,7 @@ public class TextField
         set => this.SetValue(OutlineWidthProperty, value);
     }
 
-    public Color OutlineColor
+    public Color? OutlineColor
     {
         get => (Color)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);

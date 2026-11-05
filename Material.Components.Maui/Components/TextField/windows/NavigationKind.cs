@@ -1,4 +1,5 @@
 ﻿namespace Material.Components.Maui.Platform.Editable;
+
 internal enum NavigationKind
 {
     None,
@@ -14,4 +15,8 @@ internal enum NavigationKind
     WordRight,
     SelectWordleft,
     SelectWordRight,
+    Home,
+    End,
+    SelectHome,
+    SelectEnd
 }

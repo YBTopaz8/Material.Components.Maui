@@ -33,7 +33,12 @@ public class Button
 
         this.Invalidate();
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static readonly BindableProperty TextProperty = ITextElement.TextProperty;
     public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
     public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
@@ -95,9 +100,9 @@ public class Button
         get => (Color)this.GetValue(IconColorProperty);
         set => this.SetValue(IconColorProperty, value);
     }
-    public Color OutlineColor
+    public Color? OutlineColor
     {
-        get => (Color)this.GetValue(OutlineColorProperty);
+        get => (Color?)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
     }
 

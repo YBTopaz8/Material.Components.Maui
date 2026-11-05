@@ -25,7 +25,12 @@ public class Card
         typeof(View),
         typeof(Card)
     );
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static new readonly BindableProperty BackgroundColorProperty =
         IBackgroundElement.BackgroundColorProperty;
     public static new readonly BindableProperty PaddingProperty = IPaddingElement.PaddingProperty;
@@ -69,9 +74,9 @@ public class Card
         get => (Shape)this.GetValue(ShapeProperty);
         set => this.SetValue(ShapeProperty, value);
     }
-    public Color OutlineColor
+    public Color? OutlineColor
     {
-        get => (Color)this.GetValue(OutlineColorProperty);
+        get => (Color?)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
     }
 

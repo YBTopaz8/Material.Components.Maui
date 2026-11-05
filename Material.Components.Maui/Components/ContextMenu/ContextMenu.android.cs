@@ -12,26 +12,52 @@ public partial class ContextMenu
     private void PlatformShow(View? anchor)
     {
         var context = anchor?.Handler?.MauiContext;
-        if(context == null)
-        {
-            throw new InvalidOperationException("Anchor view must be attached to a handler.");
-        }
-        if(anchor == null)
-        {
-            throw new ArgumentNullException(nameof(anchor), "Anchor view cannot be null.");
-        }
+        if (context == null) throw new InvalidOperationException("Anchor view must be attached to a handler.");
+        if (anchor == null) throw new ArgumentNullException(nameof(anchor));
+
         if (this.container == null)
         {
             this.platformContent = this.ToPlatform(context);
             this.platformAnchor = anchor.ToPlatform(context);
             this.container = new PopupWindow(this.platformContent) { OutsideTouchable = true };
             this.container.DismissEvent += this.OnClosed;
+            this.container.AnimationStyle = Android.Resource.Style.AnimationDialog;
         }
-        this.container.Width = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Width);
-        this.container.Height = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Height);
-        this.container.ShowAsDropDown(this.platformAnchor);
-    }
 
+        var density = this.platformContent!.Context!.Resources!.DisplayMetrics!.Density;
+        int menuWidth = (int)(this.DesiredSize.Width * density);
+        int menuHeight = (int)(this.DesiredSize.Height * density);
+        int anchorWidth = this.platformAnchor!.Width;
+        int anchorHeight = this.platformAnchor.Height;
+
+        this.container.Width = menuWidth;
+        this.container.Height = menuHeight;
+
+        int xOff = 0;
+        int yOff = 0;
+
+        switch (this.Placement)
+        {
+            case MenuPlacement.Up:
+                yOff = -(menuHeight + anchorHeight);
+                break;
+            case MenuPlacement.Left:
+                xOff = -menuWidth;
+                yOff = -anchorHeight;
+                break;
+            case MenuPlacement.Right:
+                xOff = anchorWidth;
+                yOff = -anchorHeight;
+                break;
+            case MenuPlacement.Down:
+            default:
+                xOff = 0;
+                yOff = 0;
+                break;
+        }
+
+        this.container.ShowAsDropDown(this.platformAnchor, xOff, yOff);
+    }
     private void PlatformShow(View? anchor, Point point)
     {
         var context = anchor?.Handler?.MauiContext;
@@ -49,17 +75,26 @@ public partial class ContextMenu
             this.platformAnchor = anchor.ToPlatform(context);
             this.container = new PopupWindow(this.platformContent) { OutsideTouchable = true };
             this.container.DismissEvent += this.OnClosed;
+
+            this.container.AnimationStyle = Android.Resource.Style.AnimationDialog;
         }
-        this.container.Width = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Width);
-        this.container.Height = (int)this.platformContent!.Context.ToPixels(this.DesiredSize.Height);
+        var density = this.platformContent!.Context!.Resources!.DisplayMetrics!.Density;
+        int menuWidth = (int)(this.DesiredSize.Width * density);
+        int menuHeight = (int)(this.DesiredSize.Height * density);
+        int anchorWidth = this.platformAnchor!.Width;
+        int anchorHeight = this.platformAnchor.Height;
+
+        this.container.Width = menuWidth;
+        this.container.Height = menuHeight;
 
         var location = new int[2];
         this.platformAnchor!.GetLocationOnScreen(location);
+
         this.container.ShowAtLocation(
             this.platformAnchor,
             Android.Views.GravityFlags.Left | Android.Views.GravityFlags.Top,
-            location[0] + (int)this.platformContent!.Context.ToPixels(point.X),
-            location[1] + (int)this.platformContent!.Context.ToPixels(point.Y)
+            location[0] + (int)(point.X * density),
+            location[1] + (int)(point.Y * density)
         );
     }
 

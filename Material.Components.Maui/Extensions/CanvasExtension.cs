@@ -17,6 +17,16 @@ internal static class CanvasExtension
 
     internal static double[] GetRadii(this IShapeElement view, float width, float height)
     {
+        if (view is ComboBox cb && (cb.CornerRadius.TopLeft > 0 || cb.CornerRadius.BottomLeft > 0 || cb.CornerRadius.TopRight > 0 || cb.CornerRadius.BottomRight > 0))
+        {
+            return
+            [
+                cb.CornerRadius.TopLeft,
+            cb.CornerRadius.TopRight,
+            0,
+            0,
+        ];
+        }
         var radius = view.GetShape(width, height);
         return
         [
@@ -49,7 +59,15 @@ internal static class CanvasExtension
             canvas.FillColor = bgColor.MultiplyAlpha(
                 element.ViewState is ViewState.Disabled ? 0.12f : 1f
             );
-            canvas.FillRectangle(rect);
+            if (element is IShapeElement shapeElement)
+            {
+                using var path = shapeElement.GetClipPath(rect);
+                canvas.FillPath(path);
+            }
+            else
+            {
+                canvas.FillRectangle(rect);
+            }
         }
 
     }
@@ -81,7 +99,7 @@ internal static class CanvasExtension
         if (element.OutlineWidth == 0)
             return;
 
-        canvas.StrokeColor = element.OutlineColor.WithAlpha(
+        canvas.StrokeColor = element.OutlineColor?.WithAlpha(
             element.ViewState is ViewState.Disabled ? 0.12f : 1f
         );
         canvas.StrokeSize = element.OutlineWidth;

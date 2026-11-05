@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-internal class ComboBoxDrawable(ComboBox view) : IDrawable, IDisposable
+internal partial class ComboBoxDrawable(ComboBox view) : IDrawable, IDisposable
 {
     readonly PathF arrowDropDownIcon = PathBuilder.Build("M12,15 L7,10H17Z");
     readonly PathF arrowDropUpIcon = PathBuilder.Build("M7,14 L12,9 17,14Z");
@@ -9,44 +9,57 @@ internal class ComboBoxDrawable(ComboBox view) : IDrawable, IDisposable
     {
         canvas.SaveState();
         canvas.Antialias = true;
+
+        var containerRect = view.ShowFloatingLabel
+         ? new RectF(rect.Left, rect.Top + 8f * (rect.Height / 64f), rect.Width, rect.Height - 8f * (rect.Height / 64f))
+         : rect;
         var scale = rect.Height / 64f;
 
-        var containerRect = new RectF
-        {
-            Left = rect.Left,
-            Top = rect.Top + 8f * scale,
-            Width = rect.Width,
-            Height = rect.Height - 8f * scale
-        };
+
 
         canvas.DrawBackground(view, containerRect);
         this.DrawItem(canvas, containerRect, scale);
-        this.DrawDrapIcon(canvas, containerRect, scale);
+
+        if (view.ShowDropDownArrow)
+        {
+            this.DrawDrapIcon(canvas, containerRect, scale);
+        }
         this.DrawActiveIndicator(canvas, containerRect);
-        this.DrawLabelText(canvas, containerRect, scale);
+        
+        if (view.ShowFloatingLabel && !string.IsNullOrEmpty(view.LabelText))
+            this.DrawLabelText(canvas, containerRect, rect.Height / 64f);
+
         canvas.DrawOutline(view, containerRect);
 
         canvas.RestoreState();
     }
-
     void DrawItem(ICanvas canvas, RectF rect, float scale)
     {
-        if (view.SelectedItem != null)
+        if (view.SelectedIndex >= 0 && view.SelectedIndex < view.Items.Count)
         {
+            var selectedItemText = view.Items[view.SelectedIndex]?.Text ?? string.Empty;
+
+            float leftPad = 16f * scale;
+            float rightPad = view.ShowDropDownArrow ? (24f + 16f + 8f) * scale : 16f * scale;
+
             var textRect = new RectF
             {
-                Left = rect.Left + 16f * scale,
-                Width = rect.Width - (16f - 24f - 16f) * scale,
+                Left = rect.Left + leftPad,
+                Width = Math.Max(0, rect.Width - leftPad - rightPad),
                 Top = rect.Top,
-                Height = view.OutlineWidth == 0 ? rect.Height - 8f * scale : rect.Height
+                Height = rect.Height
             };
+
+            var verticalAlign = (!view.ShowFloatingLabel || view.OutlineWidth != 0)
+                ? VerticalAlignment.Center
+                : VerticalAlignment.Bottom;
 
             canvas.DrawText(
                 view,
-                view.SelectedItem.Text,
+                selectedItemText,
                 textRect,
                 HorizontalAlignment.Left,
-                view.OutlineWidth == 0 ? VerticalAlignment.Bottom : VerticalAlignment.Center
+                verticalAlign
             );
         }
     }

@@ -17,7 +17,12 @@ public class CardContainer
         if (this.Handler != null)
             this.Invalidate();
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static new readonly BindableProperty BackgroundColorProperty =
         IBackgroundElement.BackgroundColorProperty;
     public static readonly BindableProperty ShapeProperty = IShapeElement.ShapeProperty;
@@ -39,9 +44,9 @@ public class CardContainer
         get => (Shape)this.GetValue(ShapeProperty);
         set => this.SetValue(ShapeProperty, value);
     }
-    public Color OutlineColor
+    public Color? OutlineColor
     {
-        get => (Color)this.GetValue(OutlineColorProperty);
+        get => (Color?)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
     }
 

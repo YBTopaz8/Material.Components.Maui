@@ -304,8 +304,9 @@ internal static class IEditableElementExtension
         Android.Text.Layout.Alignment? alignment
     ) where TElement : IEditableElement
     {
+        var safeText = element.Text ?? string.Empty;
+        var text = element.InputType is InputType.Password ? new string('•', safeText.Length) : safeText;
 
-        var text = element.InputType is InputType.Password ? new string('•', element.Text!.Length) : element.Text;
         text ??= string.Empty;
         var density = Android.App.Application.Context.Resources!.DisplayMetrics!.Density;
 

@@ -60,7 +60,12 @@ public class Switch
 
         this.Invalidate();
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static readonly BindableProperty IsSelectedProperty = BindableProperty.Create(
         nameof(IsSelected),
         typeof(bool),
@@ -139,7 +144,7 @@ public class Switch
         get => (Shape)this.GetValue(ShapeProperty);
         set => this.SetValue(ShapeProperty, value);
     }
-    public Color OutlineColor
+    public Color? OutlineColor
     {
         get => (Color)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);

@@ -45,7 +45,16 @@ public partial class MenuItem
         ITrailingIconElement.TrailingIconDataProperty;
     public static readonly BindableProperty TrailingIconColorProperty =
         ITrailingIconElement.TrailingIconColorProperty;
+    
+    public static readonly BindableProperty ContentProperty = BindableProperty.Create(
+        nameof(Content), typeof(View), typeof(MenuItem), null);
 
+    public View? Content
+    {
+        get => (View?)GetValue(ContentProperty);
+        set => SetValue(ContentProperty, value);
+    }
+    
     public string Text
     {
         get => (string)this.GetValue(TextProperty);
@@ -104,7 +113,7 @@ public partial class MenuItem
         get => (Color)this.GetValue(TrailingIconColorProperty);
         set => this.SetValue(TrailingIconColorProperty, value);
     }
-
+    public object? Value { get; set; }
     public MenuItem()
     {
         this.Drawable = new MenuItemDrawable(this);
@@ -121,13 +130,19 @@ public partial class MenuItem
             this.ViewState = ViewState.Hovered;
         }
     }
-
     internal SizeF GetDesiredSize()
     {
+        // If user provided a custom View, we should measure THAT view!
+        if (this.Content != null)
+        {
+            var measure = this.Content.Measure(double.PositiveInfinity, double.PositiveInfinity);
+            return new Size(Math.Max(measure.Width, 48), Math.Max(measure.Height, 48));
+        }
+
+        // Default icon/text sizing
         var iconSize = !string.IsNullOrEmpty(this.IconData) ? 24f : 0f;
         var TrailingIconSize = !string.IsNullOrEmpty(this.TrailingIconData) ? 24f : 0f;
         var textSize = this.GetStringSize();
-        //12 + iconSize + 12 + textSize.Width + 12 + trailingIconSize + 12;
         var needWidth = 12f + iconSize + 12f + textSize.Width + 12f + TrailingIconSize + 12f;
         var needHeight = 48f;
 

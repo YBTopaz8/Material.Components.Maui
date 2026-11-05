@@ -55,7 +55,12 @@ public class SegmentedButton
             }
         }
     }
-
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     public static readonly BindableProperty ItemsProperty =
         IItemsElement<SegmentedItem>.ItemsProperty;
 
@@ -183,9 +188,9 @@ public class SegmentedButton
         set => this.SetValue(FontIsItalicProperty, value);
     }
 
-    public Color OutlineColor
+    public Color? OutlineColor
     {
-        get => (Color)this.GetValue(OutlineColorProperty);
+        get => (Color?)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
     }
 

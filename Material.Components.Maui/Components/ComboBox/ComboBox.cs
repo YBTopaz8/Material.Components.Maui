@@ -6,7 +6,7 @@ using Microsoft.Maui.Animations;
 namespace Material.Components.Maui;
 
 [ContentProperty(nameof(Items))]
-public class ComboBox
+public partial class ComboBox
     : TouchGraphicsView,
         IItemsElement<MenuItem>,
         IItemsSourceElement,
@@ -31,9 +31,50 @@ public class ComboBox
         VisualStateManager.GoToState(this, state);
         this.IsVisualStateChanging = false;
     }
+    public event EventHandler? DropDownOpened;
+    public event EventHandler? DropDownClosed;
+    public static readonly BindableProperty MenuBackgroundColorProperty = BindableProperty.Create(
+    nameof(MenuBackgroundColor),
+    typeof(Color),
+    typeof(ComboBox),
+    default(Color),
+    propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
+);
 
+    public Color? MenuBackgroundColor
+    {
+        get => (Color?)this.GetValue(MenuBackgroundColorProperty);
+        set => this.SetValue(MenuBackgroundColorProperty, value);
+    }
+
+    public static readonly BindableProperty ShowDropDownArrowProperty = BindableProperty.Create(
+    nameof(ShowDropDownArrow), typeof(bool), typeof(ComboBox), true,
+    propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+
+    public bool ShowDropDownArrow
+    {
+        get => (bool)GetValue(ShowDropDownArrowProperty);
+        set => SetValue(ShowDropDownArrowProperty, value);
+    }
+
+    public static readonly BindableProperty ShowFloatingLabelProperty = BindableProperty.Create(
+        nameof(ShowFloatingLabel), typeof(bool), typeof(ComboBox), true,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+
+    public bool ShowFloatingLabel
+    {
+        get => (bool)GetValue(ShowFloatingLabelProperty);
+        set => SetValue(ShowFloatingLabelProperty, value);
+    }
     public static readonly BindableProperty ItemsProperty = IItemsElement<MenuItem>.ItemsProperty;
+    public static readonly BindableProperty PlacementProperty = BindableProperty.Create(
+    nameof(Placement), typeof(MenuPlacement), typeof(ComboBox), MenuPlacement.Down);
 
+    public MenuPlacement Placement
+    {
+        get => (MenuPlacement)GetValue(PlacementProperty);
+        set => SetValue(PlacementProperty, value);
+    }
     public static readonly BindableProperty ItemsSourceProperty =
         IItemsSourceElement.ItemsSourceProperty;
 
@@ -47,28 +88,38 @@ public class ComboBox
             var comboBox = bo as ComboBox;
             if (comboBox is null) return;
             var index = (int)nv;
+
+            MenuItem? selectedMenuItem = null;
+
             if (index >= 0 && index < comboBox.Items.Count)
-                comboBox.SelectedItem = comboBox.Items[index];
+            {
+                selectedMenuItem = comboBox.Items[index];
+                comboBox.SelectedItem = selectedMenuItem?.Value ?? selectedMenuItem;
+            }
+            else if (index == -1)
+            {
+                comboBox.SelectedItem = null;
+            }
 
             if (comboBox.Command?.CanExecute(comboBox.CommandParameter ?? index) is true)
                 comboBox.Command?.Execute(comboBox.CommandParameter ?? index);
 
-            comboBox.SelectedChanged?.Invoke(comboBox, new(comboBox.Items[index], index));
+            comboBox.SelectedChanged?.Invoke(comboBox, new(selectedMenuItem, index));
             ((IElement)comboBox).OnPropertyChanged();
         }
     );
 
     public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(
         nameof(SelectedItem),
-        typeof(MenuItem),
+        typeof(object),
         typeof(ComboBox),
         propertyChanged: (bo, ov, nv) =>
         {
             var comboBox = bo as ComboBox;
             if(comboBox is null) return;
-            var item = (MenuItem)nv;
-            if (comboBox.Items.Contains(item))
-                comboBox.SelectedIndex = comboBox.Items.IndexOf(item);
+            var match = comboBox.Items.FirstOrDefault(m => m == nv || m?.Value == nv);
+            if (match != null)
+                comboBox.SelectedIndex = comboBox.Items.IndexOf(match);
         }
     );
 
@@ -129,28 +180,70 @@ public class ComboBox
         }
         ((IElement)this).InvalidateMeasure();
     }
+    public static readonly BindableProperty ItemTemplateProperty = BindableProperty.Create(
+    nameof(ItemTemplate), typeof(DataTemplate), typeof(ComboBox));
 
+    public DataTemplate ItemTemplate
+    {
+        get => (DataTemplate)GetValue(ItemTemplateProperty);
+        set => SetValue(ItemTemplateProperty, value);
+    }
+
+    public static readonly BindableProperty DisplayMemberPathProperty = BindableProperty.Create(
+        nameof(DisplayMemberPath), typeof(string), typeof(ComboBox));
+
+    public string DisplayMemberPath
+    {
+        get => (string)GetValue(DisplayMemberPathProperty);
+        set => SetValue(DisplayMemberPathProperty, value);
+    }
+    public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
+    public CornerRadius CornerRadius
+    {
+        get => (CornerRadius)GetValue(CornerRadiusProperty);
+        set => SetValue(CornerRadiusProperty, value);
+    }
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
         object? sender,
         NotifyCollectionChangedEventArgs e
     )
     {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            this.Items.Clear();
+            return;
+        }
         if (e.OldItems != null)
         {
             var index = e.OldStartingIndex;
-            foreach (string item in e.OldItems)
+            for (int i = 0; i < e.OldItems.Count; i++)
             {
-                this.Items.RemoveAt(index);
-                index++;
+                if (index < this.Items.Count)
+                    this.Items.RemoveAt(index);
             }
         }
-
         if (e.NewItems != null)
         {
             var index = e.NewStartingIndex;
-            foreach (string item in e.NewItems)
+            foreach (var item in e.NewItems) // <-- 'var' instead of 'string'
             {
-                this.Items.Insert(index, new MenuItem { Text = item });
+                string displayText = string.Empty;
+
+                if (item != null)
+                {
+                    if (!string.IsNullOrEmpty(this.DisplayMemberPath))
+                    {
+                        var prop = item.GetType().GetProperty(this.DisplayMemberPath);
+                        displayText = prop?.GetValue(item)?.ToString() ?? item.ToString() ?? string.Empty;
+                    }
+                    else
+                    {
+                        displayText = item.ToString() ?? string.Empty;
+                    }
+                }
+
+                // Put the raw object (e.g. AudioDevice) in Value!
+                this.Items.Insert(index, new MenuItem { Text = displayText, Value = item });
                 index++;
             }
         }
@@ -162,9 +255,9 @@ public class ComboBox
         set => this.SetValue(SelectedIndexProperty, value);
     }
 
-    public MenuItem? SelectedItem
+    public object? SelectedItem
     {
-        get => (MenuItem?)this.GetValue(SelectedItemProperty);
+        get => this.GetValue(SelectedItemProperty);
         set => this.SetValue(SelectedItemProperty, value);
     }
 
@@ -229,7 +322,7 @@ public class ComboBox
         set => this.SetValue(ActiveIndicatorColorProperty, value);
     }
 
-    public Color OutlineColor
+    public Color? OutlineColor
     {
         get => (Color)this.GetValue(OutlineColorProperty);
         set => this.SetValue(OutlineColorProperty, value);
@@ -260,6 +353,7 @@ public class ComboBox
 
     public ComboBox()
     {
+        this.Items = new ObservableCollection<MenuItem?>();
         this.SetDynamicResource(StyleProperty, "FieldComboBoxStyle");
 
         this.Drawable = new ComboBoxDrawable(this);
@@ -272,12 +366,23 @@ public class ComboBox
     protected void OnClicked(object? sender, TouchEventArgs e)
     {
         this.IsDropDown = true;
+        this.menu.Placement = this.Placement;
 
-        if (this.menu.DesiredSize == Size.Zero)
-            this.menu.WidthRequest = this.DesiredSize.Width;
+        var popupBg = this.MenuBackgroundColor ?? this.BackgroundColor;
+        this.menu.BackgroundColor = popupBg;
+
+        this.menu.Shape = this.Shape;
+
+        this.UpdateMenuWidth();
+
+       
+
 
         this.StartLabelTextAnimation();
         this.menu.Show(this);
+
+
+        this.DropDownOpened?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnMenuClosed(object? sender, object? e)
@@ -286,6 +391,8 @@ public class ComboBox
         this.StartLabelTextAnimation();
         if (e is int index)
             this.SelectedIndex = index;
+        
+        this.DropDownClosed?.Invoke(this, EventArgs.Empty);
     }
 
     public void StartLabelTextAnimation()
@@ -364,32 +471,29 @@ public class ComboBox
             this.HeightRequest != -1 ? this.HeightRequest : double.PositiveInfinity
         );
 
-        var scale =
-            (this.HeightRequest != -1 ? this.HeightRequest : Math.Min(64f, maxHeight)) / 64f;
+        float baseHeight = this.ShowFloatingLabel ? 64f : 36f;
+        var targetHeight = this.HeightRequest != -1 ? (float)this.HeightRequest : Math.Min(baseHeight, (float)maxHeight);
+        var scale = targetHeight / baseHeight;
 
         var itemTextSize = this.GetMaxItemTextSize();
-        //16 + itemSize + 16 + arrowIconSize(24) + 16
-        var needWidth = 72f * scale + itemTextSize.Width;
-        var needHeight = 64f * scale;
 
-        var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
-                ? maxWidth
-                : this.Margin.HorizontalThickness
-                    + Math.Max(
-                        this.MinimumWidthRequest,
-                        this.WidthRequest == -1 ? Math.Min(maxWidth, needWidth) : this.WidthRequest
-                    );
-        var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
-                ? maxHeight
-                : this.Margin.VerticalThickness
-                    + Math.Max(
-                        this.MinimumHeightRequest,
-                        this.HeightRequest == -1
-                            ? Math.Min(maxHeight, needHeight)
-                            : this.HeightRequest
-                    );
+        float paddingWidth = this.ShowDropDownArrow ? 64f : 32f;
+        var needWidth = paddingWidth * scale + itemTextSize.Width;
+        var needHeight = baseHeight * scale;
+
+        var width = this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
+            ? maxWidth
+            : this.Margin.HorizontalThickness + Math.Max(
+                this.MinimumWidthRequest != -1 ? this.MinimumWidthRequest : 0,
+                this.WidthRequest == -1 ? Math.Min((float)maxWidth, needWidth) : (float)this.WidthRequest
+            );
+
+        var height = this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
+            ? maxHeight
+            : this.Margin.VerticalThickness + Math.Max(
+                this.MinimumHeightRequest != -1 ? this.MinimumHeightRequest : 0,
+                this.HeightRequest == -1 ? Math.Min((float)maxHeight, needHeight) : (float)this.HeightRequest
+            );
 
         this.DesiredSize = new Size(Math.Ceiling(width), Math.Ceiling(height));
         return this.DesiredSize;
@@ -398,5 +502,21 @@ public class ComboBox
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
         this.Items != null ? this.Items! : Array.Empty<IVisualTreeElement>().ToList();
 
+    private void UpdateMenuWidth()
+    {
+        // 1. Get the pill's actual width on screen
+        double pillActualWidth = this.Width > 0 ? this.Width : this.DesiredSize.Width;
 
+        // 2. Get the largest width needed by any text item in the menu
+        double maxItemWidth = 0;
+        foreach (var item in this.menu.Items)
+        {
+            if (item != null)
+                maxItemWidth = Math.Max(maxItemWidth, item.GetDesiredSize().Width);
+        }
+
+        // 3. The popup must ALWAYS be AT LEAST as wide as the pill, 
+        //    or wider if an item's text requires it!
+        this.menu.WidthRequest = Math.Max(pillActualWidth, maxItemWidth + 32);
+    }
 }

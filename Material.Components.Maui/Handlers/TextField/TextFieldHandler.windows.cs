@@ -1,6 +1,8 @@
 ﻿using Material.Components.Maui.Platform;
 using Material.Components.Maui.Platform.Editable;
 using Microsoft.Maui.Handlers;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 
 namespace Material.Components.Maui.Handlers;
 
@@ -18,10 +20,34 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
     {
         platformView.Connect(this.VirtualView);
         base.ConnectHandler(platformView);
+        platformView.CharacterReceived += OnCharacterReceived;
+    }
+
+    private void OnCharacterReceived(UIElement sender, CharacterReceivedRoutedEventArgs args)
+    {
+        if (this.VirtualView.InputType is InputType.Numeric)
+        {
+            // Block everything that is not a digit (allow backspace/control chars: \b, \r)
+            if (!char.IsDigit((char)args.Character) && args.Character != '\b' && args.Character != '\r')
+            {
+                args.Handled = true; // Swallows the keystroke!
+            }
+        }
+        else if (this.VirtualView.InputType is InputType.DecimalNumber)
+        {
+            // Allow digits, control chars, and decimal separator (. or ,)
+            char ch = (char)args.Character;
+            bool isDecimalChar = ch == '.' || ch == ',';
+            if (!char.IsDigit(ch) && !isDecimalChar && ch != '\b' && ch != '\r')
+            {
+                args.Handled = true;
+            }
+        }
     }
 
     protected override void DisconnectHandler(PlatformTextField platformView)
     {
+        platformView.CharacterReceived -= OnCharacterReceived;
         platformView.Disconnect();
         base.DisconnectHandler(platformView);
     }

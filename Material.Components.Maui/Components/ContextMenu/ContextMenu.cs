@@ -5,6 +5,12 @@ using System.ComponentModel;
 
 namespace Material.Components.Maui;
 
+public enum ContextMenuTrigger
+{
+    Click,                  // Tapping / Left-clicking (great for Chips & Dropdown pills)
+    RightClickOrLongPress,  // Desktop right-click / Mobile long-press (great for Cards)
+    Both
+}
 [ContentProperty(nameof(Items))]
 public partial class ContextMenu
     : TemplatedView,
@@ -39,7 +45,14 @@ public partial class ContextMenu
         get => (ObservableCollection<MenuItem?>)this.GetValue(ItemsProperty);
         set => this.SetValue(ItemsProperty, value);
     }
+    public static readonly BindableProperty PlacementProperty = BindableProperty.Create(
+    nameof(Placement), typeof(MenuPlacement), typeof(ContextMenu), MenuPlacement.Down);
 
+    public MenuPlacement Placement
+    {
+        get => (MenuPlacement)GetValue(PlacementProperty);
+        set => SetValue(PlacementProperty, value);
+    }
     public IList ItemsSource
     {
         get => (IList)this.GetValue(ItemsSourceProperty);
@@ -75,7 +88,9 @@ public partial class ContextMenu
             foreach (MenuItem item in e.OldItems)
             {
                 item.Clicked -= this.OnMenuItemClicked;
-                //this.PART_Stack.Remove(item);
+                var visual = this.PART_Stack?.Children.FirstOrDefault(c => c == item || (c is Grid g && g.Children.Contains(item)));
+                if (visual != null)
+                    this.PART_Stack?.Remove(visual);
             }
         }
 
@@ -84,8 +99,10 @@ public partial class ContextMenu
             var index = e.NewStartingIndex;
             foreach (MenuItem item in e.NewItems)
             {
-                //this.PART_Stack.Insert(index, item);
+                var visual = this.WrapMenuItem(item);
+                this.PART_Stack?.Insert(index, visual);
                 item.Clicked += this.OnMenuItemClicked;
+                index++;
             }
         }
     }
@@ -102,22 +119,27 @@ public partial class ContextMenu
         NotifyCollectionChangedEventArgs e
     )
     {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            this.Items.Clear();
+            return;
+        }
         if (e.OldItems != null)
         {
             var index = e.OldStartingIndex;
-            foreach (string item in e.OldItems)
+            for (int i = 0; i < e.OldItems.Count; i++)
             {
-                this.Items.RemoveAt(index);
-                index++;
+                if (index < this.Items.Count)
+                    this.Items.RemoveAt(index);
             }
         }
 
         if (e.NewItems != null)
         {
             var index = e.NewStartingIndex;
-            foreach (string item in e.NewItems)
+            foreach (var item in e.NewItems)
             {
-                this.Items.Insert(index, new MenuItem { Text = item });
+                this.Items.Insert(index, new MenuItem { Text = item?.ToString() ?? string.Empty, Value = item });
                 index++;
             }
         }
@@ -134,7 +156,7 @@ public partial class ContextMenu
 
     private Grid? PART_Root;
 
-    //private VerticalStackLayout PART_Stack;
+    private VerticalStackLayout PART_Stack;
 
     public ContextMenu() { }
 
@@ -153,8 +175,16 @@ public partial class ContextMenu
     {
         base.OnApplyTemplate();
         this.PART_Root = (Grid)this.GetTemplateChild("PART_Root");
-        //this.PART_Stack = (VerticalStackLayout)this.GetTemplateChild("PART_Stack");
-
+        this.PART_Stack = (VerticalStackLayout)this.GetTemplateChild("PART_Stack");
+        if (this.PART_Stack != null && this.Items != null)
+        {
+            this.PART_Stack.Children.Clear();
+            foreach (var item in this.Items)
+            {
+                if (item != null)
+                    this.PART_Stack.Children.Add(this.WrapMenuItem(item));
+            }
+        }
         this.OnChildAdded(this.PART_Root);
         VisualDiagnostics.OnChildAdded(this, this.PART_Root);
     }
@@ -170,24 +200,29 @@ public partial class ContextMenu
 
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
     {
-        var result = new Size(this.WidthRequest, this.HeightRequest);
-        if (this.WidthRequest == -1d)
+        var maxWidth = 0d;
+        foreach (var item in this.Items)
         {
-            var maxWidth = 0d;
-            foreach (var item in this.Items)
-            {
-                if(item is null) continue;
-                var (w, h) = item.GetDesiredSize();
-                maxWidth = Math.Max(maxWidth, w);
-            }
-            result.Width = maxWidth;
+            if (item is null) continue;
+            var (w, h) = item.GetDesiredSize();
+            maxWidth = Math.Max(maxWidth, w);
         }
 
-        if (this.HeightRequest == -1d)
-            result.Height = this.Items.Count * 48d + 16d;
+        // Always take WidthRequest if set, but expand if content is even wider!
+        var targetWidth = this.WidthRequest > 0
+            ? Math.Max(this.WidthRequest, maxWidth)
+            : maxWidth;
 
-        this.DesiredSize = result;
-        return result;
+        var totalHeight = 0d;
+        foreach (var item in this.Items)
+        {
+            if (item is null) continue;
+            var (_, h) = item.GetDesiredSize();
+            totalHeight += h;
+        }
+
+        this.DesiredSize = new Size(targetWidth, totalHeight + 16d);
+        return this.DesiredSize;
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
@@ -210,6 +245,124 @@ public partial class ContextMenu
             this.disposedValue = true;
         }
     }
+    private View WrapMenuItem(MenuItem item)
+    {
+        if (item.Content == null)
+            return item; // Normal custom-drawn item
+
+        var container = new Grid();
+
+        // Layer 0: The MenuItem canvas (handles touches, ripple, hover background)
+        container.Children.Add(item);
+
+        // Layer 1: The custom view on top
+        // InputTransparent = true ensures touches pass through to the MenuItem's TouchGraphicsView!
+        item.Content.InputTransparent = true;
+        container.Children.Add(item.Content);
+
+        return container;
+    }
+
+
+        // Internal property used to track and clean up the active gesture recognizer
+        private static readonly BindableProperty ActiveTapGestureProperty = BindableProperty.CreateAttached(
+            "ActiveTapGesture",
+            typeof(TapGestureRecognizer),
+            typeof(ContextMenuService),
+            null
+        );
+
+        // 1. Menu Attached Property
+        public static readonly BindableProperty MenuProperty = BindableProperty.CreateAttached(
+            "Menu",
+            typeof(ContextMenu),
+            typeof(ContextMenuService),
+            null,
+            propertyChanged: OnMenuChanged
+        );
+
+        public static ContextMenu? GetMenu(BindableObject view) => (ContextMenu?)view.GetValue(MenuProperty);
+        public static void SetMenu(BindableObject view, ContextMenu? value) => view.SetValue(MenuProperty, value);
+
+        // 2. Trigger Attached Property
+        public static readonly BindableProperty TriggerProperty = BindableProperty.CreateAttached(
+            "Trigger",
+            typeof(ContextMenuTrigger),
+            typeof(ContextMenuService),
+            ContextMenuTrigger.Click
+        );
+
+        public static ContextMenuTrigger GetTrigger(BindableObject view) => (ContextMenuTrigger)view.GetValue(TriggerProperty);
+        public static void SetTrigger(BindableObject view, ContextMenuTrigger value) => view.SetValue(TriggerProperty, value);
+
+      
+
+        public static MenuPlacement GetPlacement(BindableObject view) => (MenuPlacement)view.GetValue(PlacementProperty);
+        public static void SetPlacement(BindableObject view, MenuPlacement value) => view.SetValue(PlacementProperty, value);
+
+        private static void OnMenuChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is not View targetView)
+                return;
+
+            // 1. Clean up existing gesture recognizer if present
+            if (targetView.GetValue(ActiveTapGestureProperty) is TapGestureRecognizer existingGesture)
+            {
+                targetView.GestureRecognizers.Remove(existingGesture);
+                targetView.ClearValue(ActiveTapGestureProperty);
+            }
+
+            if (newValue is ContextMenu newMenu)
+            {
+                // Inherit BindingContext so MVVM commands inside MenuItems continue to work
+                newMenu.BindingContext = targetView.BindingContext;
+                targetView.BindingContextChanged += (s, e) => newMenu.BindingContext = targetView.BindingContext;
+
+                // 2. Create standard TapGestureRecognizer instance (not a subclass)
+                var tapGesture = new TapGestureRecognizer();
+                tapGesture.Tapped += (s, e) =>
+                {
+                    var trigger = GetTrigger(targetView);
+                    newMenu.Placement = GetPlacement(targetView);
+
+                    // Normal Click / Tap
+                    if (trigger is ContextMenuTrigger.Click or ContextMenuTrigger.Both)
+                    {
+                        newMenu.Show(targetView);
+                    }
+                    // Secondary Click (Mac Catalyst / Mobile)
+                    else if (e.Buttons == ButtonsMask.Secondary && trigger is ContextMenuTrigger.RightClickOrLongPress or ContextMenuTrigger.Both)
+                    {
+                        var pos = e.GetPosition(targetView);
+                        newMenu.Show(targetView, pos.HasValue ? (Point)pos.Value : default);
+                    }
+                };
+
+                targetView.GestureRecognizers.Add(tapGesture);
+                targetView.SetValue(ActiveTapGestureProperty, tapGesture);
+
+#if WINDOWS
+            // Handle native Desktop Windows Right-Click
+            targetView.HandlerChanged += (s, e) =>
+            {
+                if (targetView.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement winElement)
+                {
+                    winElement.RightTapped += (sender, args) =>
+                    {
+                        var trigger = GetTrigger(targetView);
+                        if (trigger is ContextMenuTrigger.RightClickOrLongPress or ContextMenuTrigger.Both)
+                        {
+                            var pos = args.GetPosition(winElement);
+                            newMenu.Placement = GetPlacement(targetView);
+                            newMenu.Show(targetView, new Point(pos.X, pos.Y));
+                        }
+                    };
+                }
+            };
+#endif
+            }
+        }
+    
 
     public void Dispose()
     {

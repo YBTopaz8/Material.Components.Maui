@@ -26,6 +26,10 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         platformView.Connect(this.VirtualView);
         platformView.TextChanged += this.OnTextChanged;
         platformView.SelectionChanged += this.OnSelectionChanged;
+
+        var doubleTapGesture = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
+        doubleTapGesture.Tapped += OnDoubleTapped;
+        this.VirtualView.GestureRecognizers.Add(doubleTapGesture);
         base.ConnectHandler(platformView);
     }
 
@@ -34,12 +38,45 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         platformView.Disconnect();
         platformView.TextChanged -= this.OnTextChanged;
         platformView.SelectionChanged -= this.OnSelectionChanged;
+        var doubleTap = this.VirtualView.GestureRecognizers.OfType<TapGestureRecognizer>().FirstOrDefault(g => g.NumberOfTapsRequired == 2);
+        if (doubleTap != null)
+        {
+            doubleTap.Tapped -= OnDoubleTapped;
+            this.VirtualView.GestureRecognizers.Remove(doubleTap);
+        }
+
         base.DisconnectHandler(platformView);
     }
-
+    private void OnDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        //// Select All Text
+        //if (!string.IsNullOrEmpty(this.VirtualView.Text))
+        //{
+        //    this.VirtualView.UpdateSelectionRange(new TextRange(0, this.VirtualView.Text.Length));
+        //    // You might need to force a redraw here depending on your PlatformTextField logic
+        //    this.PlatformView?.Invalidate();
+        //}
+    }
     private void OnTextChanged(object? sender, EditTextChangedEventArgs e)
     {
-        this.VirtualView.Text = e.Text;
+        var rawText = e.Text ?? string.Empty;
+
+        if (this.VirtualView.InputType is InputType.Numeric)
+        {
+            // Keep digits only
+            rawText = new string(rawText.Where(char.IsDigit).ToArray());
+        }
+        else if (this.VirtualView.InputType is InputType.DecimalNumber)
+        {
+            // Keep digits and at most one decimal separator
+            // (Allows digits and . or ,)
+            rawText = System.Text.RegularExpressions.Regex.Replace(rawText, @"[^0-9\.]", "");
+            var parts = rawText.Split('.');
+            if (parts.Length > 2)
+                rawText = parts[0] + "." + string.Join("", parts.Skip(1));
+        }
+
+        this.VirtualView.Text = rawText;
         this.VirtualView.UpdateSelectionRange(e.SelectionRange);
     }
 
@@ -97,7 +134,24 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
 
     static partial void MapInputType(TextFieldHandler handler, TextField virtualView)
     {
-        handler.PlatformView?.UpdateInputType(virtualView.InputType);
+        if (handler.PlatformView is PlatformTextField pv)
+        {
+            switch (virtualView.InputType)
+            {
+                case InputType.Numeric:
+                    pv.InputType = Android.Text.InputTypes.ClassNumber;
+                    break;
+                case InputType.DecimalNumber:
+                    pv.InputType = Android.Text.InputTypes.ClassNumber | Android.Text.InputTypes.NumberFlagDecimal;
+                    break;
+                case InputType.Password:
+                    pv.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextVariationPassword;
+                    break;
+                default:
+                    pv.InputType = Android.Text.InputTypes.ClassText;
+                    break;
+            }
+        }
         MapFontAttributes(handler, virtualView);
         MapFontSize(handler, virtualView);
     }

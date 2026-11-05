@@ -8,7 +8,7 @@ public interface ITextElement : IElement
         nameof(Text),
         typeof(string),
         typeof(ITextElement),
-        default,
+        string.Empty,
         propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure()
     );
 }

@@ -9,7 +9,7 @@ public interface ILabelTextElement : IElement
         nameof(LabelText),
         typeof(string),
         typeof(ILabelTextElement),
-        "Label text",
+        string.Empty,
         propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
     );
 

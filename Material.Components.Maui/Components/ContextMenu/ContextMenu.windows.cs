@@ -31,9 +31,10 @@ public partial class ContextMenu
     {
         var context = anchor.Handler?.MauiContext;
         if (context is null) return;
-        var platformContent = this.ToPlatform(context);
+
         if (this.container == null)
         {
+            var platformContent = this.ToPlatform(context);
             this.platformAnchor = anchor.ToPlatform(context);
             platformContent.Width = this.DesiredSize.Width;
             platformContent.Height = this.DesiredSize.Height;
@@ -42,20 +43,31 @@ public partial class ContextMenu
             {
                 FlyoutPresenterStyle = flyoutStyle,
                 LightDismissOverlayMode = LightDismissOverlayMode.Off,
-                Content = this.ToPlatform(context),
+                Content = platformContent,
             };
             this.container.Closed += this.OnClosed;
         }
-        this.container.ShowAt(this.platformAnchor);
+        var winPlacement = this.Placement switch
+        {
+            MenuPlacement.Up => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.TopEdgeAlignedLeft,
+            MenuPlacement.Left => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.LeftEdgeAlignedTop,
+            MenuPlacement.Right => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.RightEdgeAlignedTop,
+            _ => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedLeft
+        };
+
+        this.container.ShowAt(this.platformAnchor, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+        {
+            Placement = winPlacement
+        });
     }
 
     private void PlatformShow(View anchor, Point point)
     {
         var context = anchor.Handler?.MauiContext;
         if(context is null) return;
-        var platformContent = this.ToPlatform(context);
         if (this.container == null)
         {
+            var platformContent = this.ToPlatform(context);
             this.platformAnchor = anchor.ToPlatform(context);
             platformContent.Width = this.DesiredSize.Width;
             platformContent.Height = this.DesiredSize.Height;
@@ -71,18 +83,18 @@ public partial class ContextMenu
         }
 
 
+        var winPlacement = this.Placement switch
+        {
+            MenuPlacement.Up => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.TopEdgeAlignedLeft,
+            MenuPlacement.Left => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.LeftEdgeAlignedTop,
+            MenuPlacement.Right => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.RightEdgeAlignedTop,
+            _ => Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedLeft
+        };
 
-        this.container.ShowAt(
-            this.platformAnchor,
-            new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
-            {
-                Placement = Microsoft
-                    .UI
-                    .Xaml
-                    .Controls
-                    .Primitives
-                    .FlyoutPlacementMode
-                    .RightEdgeAlignedTop,
+        this.container.ShowAt(this.platformAnchor, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+        {
+            Placement = winPlacement
+        ,
                 Position = new Windows.Foundation.Point(point.X, point.Y)
             }
         );

@@ -15,7 +15,22 @@ public interface IEditableElement : IElement
         typeof(string),
         typeof(IEditableElement),
         default,
-        propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure()
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure(),
+         coerceValue: (bo, val) =>
+         {
+             if (val is string str && bo is IEditableElement editable)
+             {
+                 if (editable.InputType is InputType.Numeric)
+                 {
+                     return new string(str.Where(char.IsDigit).ToArray());
+                 }
+                 if (editable.InputType is InputType.DecimalNumber)
+                 {
+                     return System.Text.RegularExpressions.Regex.Replace(str, @"[^0-9\.]", "");
+                 }
+             }
+             return val;
+         }
     );
 
     public static readonly BindableProperty SelectionRangeProperty = BindableProperty.Create(

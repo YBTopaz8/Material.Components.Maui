@@ -50,9 +50,11 @@
 
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\YBTopaz8\MaterialColorUtilities\MaterialColorUtilities.SourceGenerators\MaterialColorUtilities.SourceGenerators.csproj" />
-	  <ProjectReference Include="..\..\YBTopaz8\MaterialColorUtilities\MaterialColorUtilities\MaterialColorUtilities.csproj" />
+	  <ProjectReference Include="..\..\..\MaterialColorUtilities\MaterialColorUtilities\MaterialColorUtilities.csproj" />
 	</ItemGroup>
+
+
+	
 
 
 	
