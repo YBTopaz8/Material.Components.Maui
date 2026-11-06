@@ -126,6 +126,11 @@ public class Button
 
     void OnClicked(object? sender, TouchEventArgs e)
     {
+#if WINDOWS
+
+        if (!this.IsLeftClick)
+            return;
+#endif
         if (this.Command?.CanExecute(this.CommandParameter) is true)
             this.Command?.Execute(this.CommandParameter);
     }

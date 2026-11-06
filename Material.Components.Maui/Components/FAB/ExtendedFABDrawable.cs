@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-internal class ExtendedFABDrawable(ExtendedFAB view) : IDrawable
+internal partial class ExtendedFABDrawable(ExtendedFAB view) : IDrawable
 {
     public void Draw(ICanvas canvas, RectF rect)
     {

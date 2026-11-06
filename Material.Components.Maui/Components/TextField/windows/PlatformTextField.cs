@@ -77,7 +77,44 @@ public partial class PlatformTextField : PlatformTouchGraphicsView, IDisposable
         }
     }
 
+    private readonly System.Diagnostics.Stopwatch multiClickTimer = new();
+    private int pointerClickCount = 0;
+    private Windows.Foundation.Point lastClickPoint;
+    protected override void OnPointerPressed(PointerRoutedEventArgs e)
+    {
 
+        base.OnPointerPressed(e);
+
+        var currentPoint = e.GetCurrentPoint(this);
+        if (currentPoint.Properties.IsLeftButtonPressed)
+        {
+            var pos = currentPoint.Position;
+            var elapsed = this.multiClickTimer.ElapsedMilliseconds;
+
+            // If clicked within 500ms and within a 10px radius:
+            if (this.multiClickTimer.IsRunning && elapsed <= 500 &&
+                Math.Abs(pos.X - this.lastClickPoint.X) < 10 &&
+                Math.Abs(pos.Y - this.lastClickPoint.Y) < 10)
+            {
+                this.pointerClickCount++;
+            }
+            else
+            {
+                this.pointerClickCount = 1;
+            }
+
+            this.lastClickPoint = pos;
+            this.multiClickTimer.Restart();
+
+            // TRIPLE CLICK DETECTED!
+            if (this.pointerClickCount == 3)
+            {
+                this.editableHandler.SelectAll();
+                this.pointerClickCount = 0;
+                e.Handled = true;
+            }
+        }
+    }
     protected override void OnCharacterReceived(CharacterReceivedRoutedEventArgs e)
     {
         // 1. Respect Handled!

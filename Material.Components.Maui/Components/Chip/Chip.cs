@@ -214,6 +214,9 @@ public class Chip
 
     private void OnClicked(object? sender, TouchEventArgs e)
     {
+    #if WINDOWS
+        if (!this.IsLeftClick) return;
+    #endif
         if (this.HasCloseButton)
         {
             var scale = (float)this.Bounds.Height / 32f;

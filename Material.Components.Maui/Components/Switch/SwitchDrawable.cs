@@ -18,7 +18,7 @@ internal class SwitchDrawable(Switch view) : IDrawable
         canvas.ClipPath(view.GetClipPath(drawRect));
         canvas.DrawBackground(view, drawRect);
         canvas.DrawOutline(view, drawRect);
-
+       
         canvas.ResetState();
 
 #if ANDROID
@@ -27,6 +27,12 @@ internal class SwitchDrawable(Switch view) : IDrawable
         this.DrawStateLayer(canvas, rect, scale);
 
         this.DrawThumb(canvas, drawRect, scale);
+        var textSize = view.GetStringSize();
+        if (textSize.Width > 0)
+        {
+            var textRect = new RectF(52f * scale + 8f * scale, 0, rect.Width - 60f * scale, rect.Height);
+            canvas.DrawText(view, textRect, HorizontalAlignment.Left, VerticalAlignment.Center);
+        }
     }
 
     void DrawStateLayer(ICanvas canvas, RectF rect, float scale)

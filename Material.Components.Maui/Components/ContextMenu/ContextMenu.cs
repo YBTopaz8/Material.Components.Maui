@@ -156,7 +156,7 @@ public partial class ContextMenu
 
     private Grid? PART_Root;
 
-    private VerticalStackLayout PART_Stack;
+    private VerticalStackLayout? PART_Stack;
 
     public ContextMenu() { }
 
@@ -268,7 +268,7 @@ public partial class ContextMenu
         private static readonly BindableProperty ActiveTapGestureProperty = BindableProperty.CreateAttached(
             "ActiveTapGesture",
             typeof(TapGestureRecognizer),
-            typeof(ContextMenuService),
+            typeof(ContextMenu),
             null
         );
 
@@ -276,7 +276,7 @@ public partial class ContextMenu
         public static readonly BindableProperty MenuProperty = BindableProperty.CreateAttached(
             "Menu",
             typeof(ContextMenu),
-            typeof(ContextMenuService),
+            typeof(ContextMenu),
             null,
             propertyChanged: OnMenuChanged
         );
@@ -288,7 +288,7 @@ public partial class ContextMenu
         public static readonly BindableProperty TriggerProperty = BindableProperty.CreateAttached(
             "Trigger",
             typeof(ContextMenuTrigger),
-            typeof(ContextMenuService),
+            typeof(ContextMenu),
             ContextMenuTrigger.Click
         );
 

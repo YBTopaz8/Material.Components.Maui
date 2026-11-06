@@ -21,6 +21,13 @@ internal class CheckBoxDrawable(CheckBox view) : IDrawable
             canvas.DrawIcon(view, drawRect, 18, scale);
         else
             canvas.DrawOutline(view, drawRect);
+
+        var textSize = view.GetStringSize();
+        if (textSize.Width > 0)
+        {
+            var textRect = new RectF(40f * scale + 8f * scale, 0, rect.Width - 60f * scale, rect.Height);
+            canvas.DrawText(view, textRect, HorizontalAlignment.Left, VerticalAlignment.Center);
+        }
     }
 
     void DrawStateLayer(ICanvas canvas, RectF rect)

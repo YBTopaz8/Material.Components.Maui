@@ -4,11 +4,12 @@ using Microsoft.Maui.Animations;
 
 namespace Material.Components.Maui;
 
-public class Switch
-    : GraphicsView,
+public partial class Switch
+    : TouchGraphicsView,
         IIconElement,
-        IOutlineElement,
+        IOutlineElement,IFontElement,
         IElement,
+    ITextElement,
         IBackgroundElement,
         IShapeElement,
         IStateLayerElement,
@@ -17,11 +18,11 @@ public class Switch
         IStyleElement,
         IDisposable
 {
-    protected bool IsVisualStateChanging { get; set; }
+    protected new bool IsVisualStateChanging { get; set; }
     ViewState viewState = ViewState.Normal;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public ViewState ViewState
+    public new ViewState ViewState
     {
         get => this.viewState;
         set
@@ -95,20 +96,20 @@ public class Switch
         IOutlineElement.OutlineWidthProperty;
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
-    public static readonly BindableProperty ShapeProperty = IShapeElement.ShapeProperty;
+    public new static readonly BindableProperty ShapeProperty = IShapeElement.ShapeProperty;
     public static readonly BindableProperty IconDataProperty = IIconElement.IconDataProperty;
     public static readonly BindableProperty IconColorProperty = IIconElement.IconColorProperty;
-    public static readonly BindableProperty StateLayerColorProperty =
+    public new static readonly BindableProperty StateLayerColorProperty =
         IStateLayerElement.StateLayerColorProperty;
 
-    public static readonly BindableProperty CommandProperty = IICommandElement.CommandProperty;
-    public static readonly BindableProperty CommandParameterProperty =
+    public new static readonly BindableProperty CommandProperty = IICommandElement.CommandProperty;
+    public new static readonly BindableProperty CommandParameterProperty =
         IICommandElement.CommandParameterProperty;
 
-    public static readonly BindableProperty DynamicStyleProperty =
+    public new static readonly BindableProperty DynamicStyleProperty =
         IStyleElement.DynamicStyleProperty;
 
-    public string DynamicStyle
+    public new string DynamicStyle
     {
         get => (string)this.GetValue(DynamicStyleProperty);
         set => this.SetValue(DynamicStyleProperty, value);
@@ -139,7 +140,7 @@ public class Switch
     }
 
     [TypeConverter(typeof(ShapeConverter))]
-    public Shape Shape
+    public new Shape Shape
     {
         get => (Shape)this.GetValue(ShapeProperty);
         set => this.SetValue(ShapeProperty, value);
@@ -169,28 +170,40 @@ public class Switch
         set => this.SetValue(IconColorProperty, value);
     }
 
-    public Color StateLayerColor
+    public new Color StateLayerColor
     {
         get => (Color)this.GetValue(StateLayerColorProperty);
         set => this.SetValue(StateLayerColorProperty, value);
     }
 
-    public ICommand Command
+    public new ICommand Command
     {
         get => (ICommand)this.GetValue(CommandProperty);
         set => this.SetValue(CommandProperty, value);
     }
 
-    public object CommandParameter
+    public new object CommandParameter
     {
         get => this.GetValue(CommandParameterProperty);
         set => this.SetValue(CommandParameterProperty, value);
     }
+    public static readonly BindableProperty TextProperty = ITextElement.TextProperty;
+    public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
+    public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
+    public static readonly BindableProperty FontFamilyProperty = IFontElement.FontFamilyProperty;
+    public static readonly BindableProperty FontWeightProperty = IFontElement.FontWeightProperty;
+    public static readonly BindableProperty FontIsItalicProperty = IFontElement.FontIsItalicProperty;
 
+    public string Text { get => (string)GetValue(TextProperty); set => SetValue(TextProperty, value); }
+    public Color FontColor { get => (Color)GetValue(FontColorProperty); set => SetValue(FontColorProperty, value); }
+    public float FontSize { get => (float)GetValue(FontSizeProperty); set => SetValue(FontSizeProperty, value); }
+    public string FontFamily { get => (string)GetValue(FontFamilyProperty); set => SetValue(FontFamilyProperty, value); }
+    public FontWeight FontWeight { get => (FontWeight)GetValue(FontWeightProperty); set => SetValue(FontWeightProperty, value); }
+    public bool FontIsItalic { get => (bool)GetValue(FontIsItalicProperty); set => SetValue(FontIsItalicProperty, value); }
     public event EventHandler<CheckedChangedEventArgs>? SelectedChanged;
 
-    protected IAnimationManager? animationManager;
-    bool isTouching = false;
+    protected new IAnimationManager? animationManager;
+    new bool isTouching = false;
 
     public Switch()
     {
@@ -204,7 +217,7 @@ public class Switch
         this.EndHoverInteraction += this.OnEndHoverInteraction;
     }
 
-    private void OnStartInteraction(object? sender, TouchEventArgs e)
+    private new void OnStartInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -213,7 +226,7 @@ public class Switch
         this.isTouching = true;
     }
 
-    private void OnEndInteraction(object? sender, TouchEventArgs e)
+    private new void OnEndInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -233,12 +246,12 @@ public class Switch
         this.isTouching = false;
     }
 
-    private void OnCancelInteraction(object? sender, EventArgs e)
+    private new void OnCancelInteraction(object? sender, EventArgs e)
     {
         this.isTouching = false;
     }
 
-    private void OnStartHoverInteraction(object? sender, TouchEventArgs e)
+    private new void OnStartHoverInteraction(object? sender, TouchEventArgs e)
     {
         if (!this.IsEnabled)
             return;
@@ -246,17 +259,24 @@ public class Switch
         this.ViewState = ViewState.Hovered;
     }
 
-    private void OnEndHoverInteraction(object? sender, EventArgs e)
+    private new void OnEndHoverInteraction(object? sender, EventArgs e)
     {
         if (!this.IsEnabled)
             return;
 
         this.ViewState = ViewState.Normal;
     }
+    protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+    {
+        var textSize = this.GetStringSize();
+        var width = 52f + (textSize.Width > 0 ? 8f + textSize.Width : 0); // 52px track + 8px gap + text
+        var height = Math.Max(32f, textSize.Height); // 32px track height
 
-    private bool disposedValue;
+        return new Size(width, height);
+    }
+    private new bool disposedValue;
 
-    protected virtual void Dispose(bool disposing)
+    protected new virtual void Dispose(bool disposing)
     {
         if (!this.disposedValue)
         {
@@ -272,7 +292,7 @@ public class Switch
         }
     }
 
-    public void Dispose()
+    public new void Dispose()
     {
         this.Dispose(disposing: true);
         GC.SuppressFinalize(this);

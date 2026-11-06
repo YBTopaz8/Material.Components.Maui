@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-public class ExtendedFAB
+public partial class ExtendedFAB
     : TouchGraphicsView,
         IIconElement,
         ITextElement,
@@ -105,6 +105,9 @@ public class ExtendedFAB
 
     void OnClicked(object? sender, TouchEventArgs e)
     {
+#if WINDOWS
+        if (!this.IsLeftClick) return;
+#endif
         if (this.Command?.CanExecute(this.CommandParameter) is true)
             this.Command?.Execute(this.CommandParameter);
     }

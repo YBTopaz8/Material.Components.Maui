@@ -5,7 +5,7 @@ using System.Windows.Input;
 
 namespace Material.Components.Maui;
 
-public class RadioButton
+public partial class RadioButton
     : WrapLayout,
         IItemsElement<RadioItem>,
         IItemsSourceElement,
@@ -55,7 +55,7 @@ public class RadioButton
             foreach (var ri in view.Items)
             {
                 if(ri is null) continue;
-                ri.IsSelected = item.Equals(ri);
+                ri.IsSelected = item != null && item.Equals(ri);
             }
         }
     );
@@ -76,10 +76,47 @@ public class RadioButton
         set => this.SetValue(ItemsSourceProperty, value);
     }
 
+    private bool isSyncing = false;
+
     void IItemsElement<RadioItem>.OnItemsCollectionChanged(
         object? sender,
         NotifyCollectionChangedEventArgs e
-    ) { }
+    )
+    {
+        if (this.isSyncing) return;
+
+        try
+        {
+            this.isSyncing = true;
+
+            if (e.OldItems != null)
+            {
+                foreach (RadioItem item in e.OldItems)
+                {
+                    if (this.Children.Contains(item))
+                        this.Children.Remove(item);
+                }
+            }
+
+            if (e.NewItems != null)
+            {
+                var index = e.NewStartingIndex;
+                foreach (RadioItem item in e.NewItems)
+                {
+                    if (!this.Children.Contains(item))
+                    {
+                        var safeIndex = Math.Clamp(index, 0, this.Children.Count);
+                        this.Children.Insert(safeIndex, item);
+                    }
+                    index++;
+                }
+            }
+        }
+        finally
+        {
+            this.isSyncing = false;
+        }
+    }
 
     void IItemsSourceElement.OnItemsSourceCollectionChanged(
         object? sender,
@@ -141,12 +178,38 @@ public class RadioButton
 
     private void OnChildAdded(object? sender, ElementEventArgs e)
     {
-        this.Items.Add((RadioItem)e.Element);
+        if (this.isSyncing) return;
+
+        if (e.Element is RadioItem item && !this.Items.Contains(item))
+        {
+            try
+            {
+                this.isSyncing = true;
+                this.Items.Add(item);
+            }
+            finally
+            {
+                this.isSyncing = false;
+            }
+        }
     }
 
     private void OnChildRemoved(object? sender, ElementEventArgs e)
     {
-        this.Items.Remove((RadioItem)e.Element);
+        if (this.isSyncing) return;
+
+        if (e.Element is RadioItem item && this.Items.Contains(item))
+        {
+            try
+            {
+                this.isSyncing = true;
+                this.Items.Remove(item);
+            }
+            finally
+            {
+                this.isSyncing = false;
+            }
+        }
     }
 
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>

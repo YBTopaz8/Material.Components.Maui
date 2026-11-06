@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    x:Class="Material.Components.Maui.Styles.GooeyFabStyles"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:Material.Components.Maui">
+
+    <!--  Bottom-Right Corner Style (Standard Mobile FAB position)  -->
+    <Style x:Key="BottomRightGooeyFabStyle" TargetType="views:GooeyFabGroup">
+        <Setter Property="HorizontalOptions" Value="End" />
+        <Setter Property="VerticalOptions" Value="End" />
+        <Setter Property="Margin" Value="24" />
+        <Setter Property="Placement" Value="TopLeft" />
+        <Setter Property="Distance" Value="90" />
+        <Setter Property="RotateMainFabOnOpen" Value="True" />
+    </Style>
+
+    <!--  Center/Bottom Menu Style  -->
+    <Style x:Key="BottomCenterGooeyFabStyle" TargetType="views:GooeyFabGroup">
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="End" />
+        <Setter Property="Margin" Value="16" />
+        <Setter Property="Placement" Value="TopRight" />
+        <Setter Property="Distance" Value="80" />
+    </Style>
+
+</ResourceDictionary>

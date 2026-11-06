@@ -149,7 +149,7 @@ internal static class CanvasExtension
         }
         else if (viewState is ViewState.Pressed)
         {
-            canvas.FillColor = element.StateLayerColor.WithAlpha(StateLayerOpacity.Pressed);
+            canvas.FillColor = element.StateLayerColor?.WithAlpha(StateLayerOpacity.Pressed);
             canvas.FillRectangle(rect);
         }
     }
@@ -162,7 +162,7 @@ internal static class CanvasExtension
         float percent
     )
     {
-        canvas.FillColor = element.StateLayerColor.WithAlpha(StateLayerOpacity.Pressed);
+        canvas.FillColor = element.StateLayerColor?.WithAlpha(StateLayerOpacity.Pressed);
         canvas.FillCircle(point, 0f.Lerp(size, percent));
     }
 

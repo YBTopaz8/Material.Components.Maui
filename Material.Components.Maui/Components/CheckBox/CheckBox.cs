@@ -1,10 +1,10 @@
 ﻿namespace Material.Components.Maui;
 
-public class CheckBox
+public partial class CheckBox
     : TouchGraphicsView,
-        IIconElement,
+        IIconElement, IFontElement,
         IOutlineElement,
-        IElement,
+        IElement, ITextElement,
         IBackgroundElement,
         IShapeElement,
         IStateLayerElement,
@@ -29,6 +29,19 @@ public class CheckBox
 
         this.Invalidate();
     }
+    public static readonly BindableProperty TextProperty = ITextElement.TextProperty;
+    public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
+    public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
+    public static readonly BindableProperty FontFamilyProperty = IFontElement.FontFamilyProperty;
+    public static readonly BindableProperty FontWeightProperty = IFontElement.FontWeightProperty;
+    public static readonly BindableProperty FontIsItalicProperty = IFontElement.FontIsItalicProperty;
+
+    public string Text { get => (string)GetValue(TextProperty); set => SetValue(TextProperty, value); }
+    public Color FontColor { get => (Color)GetValue(FontColorProperty); set => SetValue(FontColorProperty, value); }
+    public float FontSize { get => (float)GetValue(FontSizeProperty); set => SetValue(FontSizeProperty, value); }
+    public string FontFamily { get => (string)GetValue(FontFamilyProperty); set => SetValue(FontFamilyProperty, value); }
+    public FontWeight FontWeight { get => (FontWeight)GetValue(FontWeightProperty); set => SetValue(FontWeightProperty, value); }
+    public bool FontIsItalic { get => (bool)GetValue(FontIsItalicProperty); set => SetValue(FontIsItalicProperty, value); }
     public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
     public CornerRadius CornerRadius
     {
@@ -99,7 +112,14 @@ public class CheckBox
     {
         this.IsChecked = !this.IsChecked;
     }
+    protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+    {
+        var textSize = this.GetStringSize();
+        var width = 40f + (textSize.Width > 0 ? 8f + textSize.Width : 0); 
+        var height = Math.Max(32f, textSize.Height); // 32px track height
 
+        return new Size(width, height);
+    }
     protected override void Dispose(bool disposing)
     {
         if (!this.disposedValue && disposing)

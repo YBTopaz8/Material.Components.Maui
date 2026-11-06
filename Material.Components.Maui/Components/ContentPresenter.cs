@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-internal class ContentPresenter : Microsoft.Maui.Controls.ContentPresenter, IVisualTreeElement
+internal partial class ContentPresenter : Microsoft.Maui.Controls.ContentPresenter, IVisualTreeElement
 {
     public static new readonly BindableProperty ContentProperty = BindableProperty.Create(
         nameof(Content),
@@ -36,10 +36,11 @@ internal class ContentPresenter : Microsoft.Maui.Controls.ContentPresenter, IVis
     protected override void OnBindingContextChanged()
     {
         base.OnBindingContextChanged();
-
-        SetInheritedBindingContext(base.Content, this.BindingContext);
+        if (base.Content is not null)
+        {
+            SetInheritedBindingContext(base.Content, this.BindingContext);
+        }
     }
-
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
         this.Content != null
             ? new List<IVisualTreeElement> { this.Content }

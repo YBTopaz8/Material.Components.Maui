@@ -5,7 +5,7 @@ using Microsoft.Maui.Platform;
 
 namespace Material.Components.Maui;
 
-public class TouchGraphicsView
+public partial class TouchGraphicsView
     : GraphicsView,
         IElement,
         IBackgroundElement,
@@ -332,15 +332,25 @@ public class TouchGraphicsView
         }
         return maxSize;
     }
-
+    public bool IsLeftClick { get; internal set; } = true;
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();
         if (this.Handler != null)
         {
 #if WINDOWS
-            var pv = this.Handler.PlatformView as PlatformTouchGraphicsView;
-            pv?.RightTapped += this.OnRightTapped;
+            if (this.Handler?.PlatformView is Microsoft.UI.Xaml.UIElement pv)
+            {
+                pv.PointerPressed += (s, args) =>
+                {
+                    var props = args.GetCurrentPoint(pv).Properties;
+                    // True only if the primary/left button was pressed!
+                    this.IsLeftClick = props.IsLeftButtonPressed;
+                };
+                pv.RightTapped += this.OnRightTapped;
+            }
+            //var pv = this.Handler.PlatformView as PlatformTouchGraphicsView;
+            //pv?.RightTapped += this.OnRightTapped;
 #endif
         }
     }

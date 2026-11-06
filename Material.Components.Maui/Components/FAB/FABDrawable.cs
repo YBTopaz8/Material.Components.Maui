@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-internal class FABDrawable(FAB view) : IDrawable
+internal partial class FABDrawable(FAB view) : IDrawable
 {
     void IDrawable.Draw(ICanvas canvas, RectF rect)
     {

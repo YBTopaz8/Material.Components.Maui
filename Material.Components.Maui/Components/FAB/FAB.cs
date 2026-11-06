@@ -1,6 +1,6 @@
 ﻿namespace Material.Components.Maui;
 
-public class FAB
+public partial class FAB
     : TouchGraphicsView,
         IIconElement,
         IElevationElement,
@@ -62,9 +62,23 @@ public class FAB
         this.Drawable = new FABDrawable(this);
         this.Clicked += this.OnClicked;
     }
+    protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+    {
+        // Standard Material Design FAB is 56x56
+        var scale = (this.HeightRequest != -1 ? this.HeightRequest : 56f) / 56f;
+        var size = 56f * scale;
 
+        var width = this.Margin.HorizontalThickness + Math.Max(this.MinimumWidthRequest, this.WidthRequest == -1 ? size : this.WidthRequest);
+        var height = this.Margin.VerticalThickness + Math.Max(this.MinimumHeightRequest, this.HeightRequest == -1 ? size : this.HeightRequest);
+
+        this.DesiredSize = new Size(Math.Ceiling(width), Math.Ceiling(height));
+        return this.DesiredSize;
+    }
     void OnClicked(object? sender, TouchEventArgs e)
     {
+#if WINDOWS
+        if (!this.IsLeftClick) return;
+#endif
         if (this.Command?.CanExecute(this.CommandParameter) is true)
             this.Command?.Execute(this.CommandParameter);
     }

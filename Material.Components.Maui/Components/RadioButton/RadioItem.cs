@@ -82,6 +82,11 @@ public partial class RadioItem
 
     private void OnClicked(object? sender, TouchEventArgs e)
     {
+#if WINDOWS
+
+        if (!this.IsLeftClick)
+            return;
+#endif
         var rb = this.GetParentElement<RadioButton>();
         rb?.SelectedItem = this;
     }
