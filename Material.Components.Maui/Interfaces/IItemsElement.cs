@@ -19,6 +19,16 @@ public interface IItemsElement<T>
             var result = new ObservableCollection<T?>();
             result.CollectionChanged += ((IItemsElement<T?>)bo).OnItemsCollectionChanged;
             return result;
+        },
+        propertyChanged: (bo, ov, nv) =>
+        {
+          
+
+            var element = (IItemsElement<T?>)bo;
+            if (ov is ObservableCollection<T?> oldCollection)
+                oldCollection.CollectionChanged -= element.OnItemsCollectionChanged;
+            if (nv is ObservableCollection<T?> newCollection)
+                newCollection.CollectionChanged += element.OnItemsCollectionChanged;
         }
     );
 

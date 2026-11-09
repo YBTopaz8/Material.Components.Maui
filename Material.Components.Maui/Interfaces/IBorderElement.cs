@@ -5,7 +5,7 @@ public interface IBorderElement : IShapeElement
     int BorderWidth { get; set; }
     Color? BorderColor { get; set; }
 
-    public static readonly BindableProperty BorderThicknessProperty = BindableProperty.Create(
+    public static readonly BindableProperty BorderWidthProperty = BindableProperty.Create(
         nameof(BorderWidth),
         typeof(int),
         typeof(IBorderElement),

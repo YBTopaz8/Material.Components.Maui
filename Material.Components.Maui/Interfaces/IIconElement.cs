@@ -13,7 +13,9 @@ public interface IIconElement : IElement, IDisposable
         default,
         propertyChanged: (bo, ov, nv) =>
         {
-            ((IIconElement)bo).IconPath = PathBuilder.Build((string)nv);
+            var str = (string)nv;
+
+            ((IIconElement)bo).IconPath = string.IsNullOrWhiteSpace(str) ? null : PathBuilder.Build(str);
             ((IElement)bo).InvalidateMeasure();
         }
     );

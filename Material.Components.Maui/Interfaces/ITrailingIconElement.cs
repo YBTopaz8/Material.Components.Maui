@@ -13,7 +13,11 @@ public interface ITrailingIconElement : IElement, IDisposable
         default,
         propertyChanged: (bo, ov, nv) =>
         {
-            ((ITrailingIconElement)bo).TrailingIconPath = PathBuilder.Build((string)nv);
+            var str = (string)nv;
+
+            ((ITrailingIconElement)bo).TrailingIconPath = string.IsNullOrWhiteSpace(str) ? null : PathBuilder.Build(str);
+
+
             ((IElement)bo).InvalidateMeasure();
         }
     );

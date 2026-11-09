@@ -32,7 +32,11 @@ public interface IElement
         propertyChanged: (bo, ov, nv) =>
         {
             var isEnabled = (bool)nv;
-            ((TouchGraphicsView)bo).ViewState = isEnabled ? ViewState.Normal : ViewState.Disabled;
+            if (bo is TouchGraphicsView tgv)
+            {
+
+                tgv.ViewState = isEnabled ? ViewState.Normal : ViewState.Disabled;
+            }
             ((IElement)bo).OnPropertyChanged();
         }
     );

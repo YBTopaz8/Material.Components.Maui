@@ -11,33 +11,26 @@ public interface IEditableElement : IElement
     InputType InputType { get; set; }
 
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
-        nameof(Text),
-        typeof(string),
-        typeof(IEditableElement),
-        default,
-        propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure(),
-         coerceValue: (bo, val) =>
-         {
-             if (val is string str && bo is IEditableElement editable)
-             {
-                 if (editable.InputType is InputType.Numeric)
-                 {
-                     return new string(str.Where(char.IsDigit).ToArray());
-                 }
-                 if (editable.InputType is InputType.DecimalNumber)
-                 {
-                     return System.Text.RegularExpressions.Regex.Replace(str, @"[^0-9\.]", "");
-                 }
-             }
-             return val;
-         }
-    );
+       nameof(Text), typeof(string), typeof(IEditableElement), default(string),
+       defaultBindingMode: BindingMode.TwoWay, // <--- CRITICAL FOR MVVM
+       propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure(),
+       coerceValue: (bo, val) =>
+       {
+           if (val is string str && bo is IEditableElement editable)
+           {
+               if (editable.InputType is InputType.Numeric)
+                   return new string(str.Where(char.IsDigit).ToArray());
+               if (editable.InputType is InputType.DecimalNumber)
+                   return System.Text.RegularExpressions.Regex.Replace(str, @"[^0-9\.]", "");
+           }
+           return val;
+       });
 
     public static readonly BindableProperty SelectionRangeProperty = BindableProperty.Create(
         nameof(SelectionRange),
         typeof(TextRange),
         typeof(IEditableElement),
-        default,
+        default(TextRange),
         propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
     );
 

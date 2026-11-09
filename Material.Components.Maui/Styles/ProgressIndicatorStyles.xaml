@@ -13,12 +13,13 @@
         <Setter Property="VerticalOptions" Value="Center" />
 
         <Setter Property="IndicatorType" Value="Circular" />
-        <Setter Property="Percent" Value="-1" />
+        <Setter Property="Value" Value="-1" />
         <Setter Property="AnimationDuration" Value="1.5" />
         <Setter Property="Shape" Value="Full" />
         <Setter Property="ActiveIndicatorHeight" Value="4" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="ActiveIndicatorColor" Value="{DynamicResource PrimaryColor}" />
+        <Setter Property="TrackColor" Value="{DynamicResource SurfaceContainerHighestColor}" />
     </Style>
 
     <Style x:Key="LinearProgressIndicatorStyle" TargetType="views:ProgressIndicator">
@@ -28,11 +29,12 @@
         <Setter Property="VerticalOptions" Value="Center" />
 
         <Setter Property="IndicatorType" Value="Linear" />
-        <Setter Property="Percent" Value="-1" />
+        <Setter Property="Value" Value="-1" />
         <Setter Property="AnimationDuration" Value="1.5" />
         <Setter Property="Shape" Value="None" />
         <Setter Property="ActiveIndicatorHeight" Value="4" />
         <Setter Property="BackgroundColor" Value="{DynamicResource SurfaceContainerHighestColor}" />
+        <Setter Property="TrackColor" Value="{DynamicResource SurfaceContainerHighestColor}" />
         <Setter Property="ActiveIndicatorColor" Value="{DynamicResource PrimaryColor}" />
     </Style>
 
