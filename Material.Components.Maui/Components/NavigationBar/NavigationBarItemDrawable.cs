@@ -19,7 +19,7 @@ internal class NavigationBarItemDrawable(NavigationBarItem view) : IDrawable
 
         var textBounds = new RectF(rect.Left, rect.Top, rect.Width, rect.Height - 16);
         canvas.DrawText(view, textBounds, HorizontalAlignment.Center, VerticalAlignment.Bottom);
-        canvas.ResetState();
+        canvas.RestoreState();
     }
 
     private void DrawStateLayer(ICanvas canvas, RectF rect)
@@ -45,6 +45,6 @@ internal class NavigationBarItemDrawable(NavigationBarItem view) : IDrawable
         else
             canvas.DrawRipple(view, view.rippleStartPoint, view.RippleSize, view.RipplePercent);
 
-        canvas.ResetState();
+        canvas.RestoreState();
     }
 }

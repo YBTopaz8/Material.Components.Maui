@@ -157,10 +157,12 @@ public partial class Card
             }
 
             this.UpdateInteractivity(this.IsClickable);
+            this.OnChildAdded(this.PART_Root);
+
+            VisualDiagnostics.OnChildAdded(this, this.PART_Root);
         }
 
-        this.OnChildAdded(this.PART_Root);
-        VisualDiagnostics.OnChildAdded(this, this.PART_Root);
+        
     }
 
     private void OnContainerClicked(object? sender, TouchEventArgs e)

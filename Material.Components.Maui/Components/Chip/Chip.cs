@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Material.Components.Maui;
 
-public class Chip
+public partial class Chip
     : TouchGraphicsView,
         IIconElement,
         ITextElement,
@@ -41,6 +41,9 @@ public class Chip
         get => (CornerRadius)GetValue(CornerRadiusProperty);
         set => SetValue(CornerRadiusProperty, value);
     }
+    public static readonly BindableProperty ChipTypeProperty = BindableProperty.Create(
+        nameof(ChipType), typeof(ChipType), typeof(Chip), ChipType.Filter,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
     public static readonly BindableProperty IsSelectedProperty = BindableProperty.Create(
         nameof(IsSelected),
         typeof(bool),
@@ -56,7 +59,22 @@ public class Chip
                 view.Command?.Execute(view.CommandParameter ?? nv);
         }
     );
-
+    public static readonly BindableProperty IsTriStateProperty = BindableProperty.Create(
+       nameof(IsTriState), typeof(bool), typeof(Chip), false);
+    public static readonly BindableProperty IndeterminateColorProperty = BindableProperty.Create(
+           nameof(IndeterminateColor), typeof(Color), typeof(Chip), Colors.DarkSlateGray,
+           propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+    public static readonly BindableProperty IsCheckedProperty = BindableProperty.Create(
+       nameof(IsChecked), typeof(bool?), typeof(Chip), false,
+       propertyChanged: (bo, ov, nv) =>
+       {
+           var view = (Chip)bo;
+           view.IsSelected = (nv as bool?) == true;
+           view.ChangeVisualState();
+           view.CheckedChanged?.Invoke(view, new CheckedChangedEventArgs((bool?)nv == true));
+           if (view.Command?.CanExecute(view.CommandParameter ?? nv) is true)
+               view.Command?.Execute(view.CommandParameter ?? nv);
+       });
     public static readonly BindableProperty HasCloseButtonProperty = BindableProperty.Create(
         nameof(HasCloseButton),
         typeof(bool),
@@ -88,7 +106,11 @@ public class Chip
         set => this.SetValue(IsSelectedProperty, value);
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
+
+    public ChipType ChipType { get => (ChipType)GetValue(ChipTypeProperty); set => SetValue(ChipTypeProperty, value); }
+    public bool? IsChecked { get => (bool?)GetValue(IsCheckedProperty); set => SetValue(IsCheckedProperty, value); }
+    public bool IsTriState { get => (bool)GetValue(IsTriStateProperty); set => SetValue(IsTriStateProperty, value); }
+    public Color IndeterminateColor { get => (Color)GetValue(IndeterminateColorProperty); set => SetValue(IndeterminateColorProperty, value); }
     public bool HasCloseButton
     {
         get => (bool)this.GetValue(HasCloseButtonProperty);
@@ -159,6 +181,7 @@ public class Chip
     public event EventHandler<EventArgs>? Closed;
     public event EventHandler<CheckedChangedEventArgs>? SelectedChanged;
 
+    public event EventHandler<CheckedChangedEventArgs>? CheckedChanged;
     protected IFontManager? fontManager;
 
     public Chip()
@@ -214,18 +237,14 @@ public class Chip
 
     private void OnClicked(object? sender, TouchEventArgs e)
     {
-    #if WINDOWS
+#if WINDOWS
         if (!this.IsLeftClick) return;
-    #endif
-        if (this.HasCloseButton)
+#endif
+
+        if (this.HasCloseButton || this.ChipType == ChipType.Input)
         {
             var scale = (float)this.Bounds.Height / 32f;
-            var closeRect = new RectF(
-                (float)(this.Bounds.Width - (8f + 16f) * scale),
-                8f * scale,
-                18f * scale,
-                18f * scale
-            );
+            var closeRect = new RectF((float)(this.Bounds.Width - 24f * scale), 8f * scale, 18f * scale, 18f * scale);
             if (closeRect.Contains(e.Touches[0]))
             {
                 this.Closed?.Invoke(this, e);
@@ -233,7 +252,27 @@ public class Chip
             }
         }
 
-        this.IsSelected = !this.IsSelected;
+        // Action Chip: Simply triggers click/command, never toggles checks!
+        if (this.ChipType == ChipType.Action)
+        {
+            return;
+        }
+
+        // Filter Chip: Toggles state
+        if (this.IsTriState)
+        {
+            // Cycle: false -> true -> null (indeterminate) -> false
+            this.IsChecked = this.IsChecked switch
+            {
+                false => true,
+                true => null,
+                _ => false
+            };
+        }
+        else
+        {
+            this.IsChecked = !(this.IsChecked == true);
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -246,4 +285,10 @@ public class Chip
         }
         base.Dispose(disposing);
     }
+}
+public enum ChipType
+{
+    Action,   // Simple touch button, only ripples & fires Clicked/Command
+    Filter,   // Toggleable with Checkmark or Indeterminate Dot •
+    Input     // Removable with close button (✕)
 }

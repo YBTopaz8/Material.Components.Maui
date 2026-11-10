@@ -1,7 +1,7 @@
 ﻿namespace Material.Components.Maui;
 
 [ContentProperty(nameof(Content))]
-public class NavigationBarItem
+public partial class NavigationBarItem
     : TouchGraphicsView,
         IContentElement,
         ITextElement,
