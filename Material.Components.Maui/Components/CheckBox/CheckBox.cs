@@ -1,4 +1,6 @@
-﻿namespace Material.Components.Maui;
+﻿using Microsoft.VisualBasic;
+
+namespace Material.Components.Maui;
 
 public partial class CheckBox
     : TouchGraphicsView,
@@ -35,7 +37,11 @@ public partial class CheckBox
     public static readonly BindableProperty FontFamilyProperty = IFontElement.FontFamilyProperty;
     public static readonly BindableProperty FontWeightProperty = IFontElement.FontWeightProperty;
     public static readonly BindableProperty FontIsItalicProperty = IFontElement.FontIsItalicProperty;
-
+    //public bool? IsChecked { get => (bool?)GetValue(IsCheckedProperty); set => SetValue(IsCheckedProperty, value); }
+    public bool IsTriState { get => (bool)GetValue(IsTriStateProperty); set => SetValue(IsTriStateProperty, value); }
+    public LabelPlacement LabelPlacement { get => (LabelPlacement)GetValue(LabelPlacementProperty); set => SetValue(LabelPlacementProperty, value); }
+    public Color CheckColor { get => (Color)GetValue(CheckColorProperty); set => SetValue(CheckColorProperty, value); }
+    public Color BoxColor { get => (Color)GetValue(BoxColorProperty); set => SetValue(BoxColorProperty, value); }
     public string Text { get => (string)GetValue(TextProperty); set => SetValue(TextProperty, value); }
     public Color FontColor { get => (Color)GetValue(FontColorProperty); set => SetValue(FontColorProperty, value); }
     public float FontSize { get => (float)GetValue(FontSizeProperty); set => SetValue(FontSizeProperty, value); }
@@ -55,20 +61,29 @@ public partial class CheckBox
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
     public static readonly BindableProperty IsCheckedProperty = BindableProperty.Create(
-        nameof(IsChecked),
-        typeof(bool),
-        typeof(CheckBox),
-        false,
-        propertyChanged: (bo, ov, nv) =>
-        {
-            var cb = (CheckBox)bo;
-            cb.CheckedChanged?.Invoke(cb, new CheckedChangedEventArgs(cb.IsChecked));
+       nameof(IsChecked), typeof(bool?), typeof(CheckBox), false,
+       propertyChanged: (bo, ov, nv) =>
+       {
+           var cb = (CheckBox)bo;
+           cb.CheckedChanged?.Invoke(cb, new CheckedChangedEventArgs((bool?)nv == true));
+           if (cb.Command?.CanExecute(cb.CommandParameter ?? nv) is true)
+               cb.Command?.Execute(cb.CommandParameter ?? nv);
+           cb.Invalidate();
+       });
+    public static readonly BindableProperty IsTriStateProperty = BindableProperty.Create(
+     nameof(IsTriState), typeof(bool), typeof(CheckBox), false);
 
-            if (cb.Command?.CanExecute(cb.CommandParameter ?? cb.IsChecked) is true)
-                cb.Command?.Execute(cb.CommandParameter ?? cb.IsChecked);
-        }
-    );
+    public static readonly BindableProperty LabelPlacementProperty = BindableProperty.Create(
+        nameof(LabelPlacement), typeof(LabelPlacement), typeof(CheckBox), LabelPlacement.End,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure());
 
+    public static readonly BindableProperty CheckColorProperty = BindableProperty.Create(
+        nameof(CheckColor), typeof(Color), typeof(CheckBox), Colors.White,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+
+    public static readonly BindableProperty BoxColorProperty = BindableProperty.Create(
+        nameof(BoxColor), typeof(Color), typeof(CheckBox), Colors.DodgerBlue,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
     public Color? OutlineColor
     {
         get => (Color?)this.GetValue(OutlineColorProperty);
@@ -94,7 +109,7 @@ public partial class CheckBox
         set => this.SetValue(IconColorProperty, value);
     }
 
-    public bool IsChecked
+    public bool? IsChecked
     {
         get => (bool)this.GetValue(IsCheckedProperty);
         set => this.SetValue(IsCheckedProperty, value);
@@ -106,6 +121,27 @@ public partial class CheckBox
     {
         this.Drawable = new CheckBoxDrawable(this);
         this.EndInteraction += this.OnCheckChanged;
+        this.Clicked += OnClicked;
+    }
+
+    private void OnClicked(object? sender, TouchEventArgs e)
+    {
+#if WINDOWS
+        if (!this.IsLeftClick) return;
+#endif
+        if (this.IsTriState)
+        {
+            this.IsChecked = this.IsChecked switch
+            {
+                false => true,
+                true => null,
+                _ => false
+            };
+        }
+        else
+        {
+            this.IsChecked = !(this.IsChecked == true);
+        }
     }
 
     private void OnCheckChanged(object? sender, TouchEventArgs e)
@@ -115,10 +151,16 @@ public partial class CheckBox
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
     {
         var textSize = this.GetStringSize();
-        var width = 40f + (textSize.Width > 0 ? 8f + textSize.Width : 0); 
-        var height = Math.Max(32f, textSize.Height); // 32px track height
+        float boxSize = 24f;
+        float padding = 8f;
 
-        return new Size(width, height);
+        float width = boxSize + (textSize.Width > 0 ? (padding + textSize.Width) : 0) + 16f;
+        float height = Math.Max(boxSize, textSize.Height) + 16f;
+
+        this.DesiredSize = new Size(Math.Ceiling(width), Math.Ceiling(height));
+        return this.DesiredSize;
+
+
     }
     protected override void Dispose(bool disposing)
     {

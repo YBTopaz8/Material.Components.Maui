@@ -13,26 +13,47 @@ internal class SwitchDrawable(Switch view) : IDrawable
     {
         canvas.SaveState();
         canvas.Antialias = true;
-        var scale = rect.Height / 40f;
-        var drawRect = new RectF(4f * scale, 4f * scale, rect.Width - 8f * scale, 32f * scale);
+
+        float scale = rect.Height / 40f;
+        float trackWidth = 52f * scale;
+        float trackHeight = 32f * scale;
+        float gap = 8f * scale;
+        var textSize = view.GetStringSize();
+
+        // Determine layout positions based on LabelPlacement
+        float trackX = (view.LabelPlacement == LabelPlacement.End)
+            ? rect.Left + (4f * scale)
+            : rect.Right - trackWidth - (4f * scale);
+
+        var drawRect = new RectF(trackX, rect.Center.Y - trackHeight / 2f, trackWidth, trackHeight);
+
+        // 1. Draw Track
         canvas.ClipPath(view.GetClipPath(drawRect));
         canvas.DrawBackground(view, drawRect);
         canvas.DrawOutline(view, drawRect);
-       
-        canvas.ResetState();
+        canvas.RestoreState();
 
-#if ANDROID
-        canvas.Scale(canvas.DisplayScale, canvas.DisplayScale);
-#endif
-        this.DrawStateLayer(canvas, rect, scale);
-
+        canvas.SaveState();
+        // 2. Draw Thumb
         this.DrawThumb(canvas, drawRect, scale);
-        var textSize = view.GetStringSize();
+
+        // 3. Draw Text
         if (textSize.Width > 0)
         {
-            var textRect = new RectF(52f * scale + 8f * scale, 0, rect.Width - 60f * scale, rect.Height);
-            canvas.DrawText(view, textRect, HorizontalAlignment.Left, VerticalAlignment.Center);
+            float textX = (view.LabelPlacement == LabelPlacement.End)
+                ? drawRect.Right + gap
+                : rect.Left + (4f * scale);
+
+            float textWidth = rect.Width - trackWidth - gap - (8f * scale);
+            var textRect = new RectF(textX, rect.Top, textWidth, rect.Height);
+
+            canvas.Font = new Microsoft.Maui.Graphics.Font(view.FontFamily, (int)view.FontWeight, view.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal);
+            canvas.FontSize = view.FontSize;
+            canvas.FontColor = view.FontColor;
+            canvas.DrawString(view.Text, textRect, HorizontalAlignment.Left, VerticalAlignment.Center);
         }
+
+        canvas.RestoreState();
     }
 
     void DrawStateLayer(ICanvas canvas, RectF rect, float scale)

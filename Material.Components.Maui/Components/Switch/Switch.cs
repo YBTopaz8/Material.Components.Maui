@@ -61,6 +61,17 @@ public partial class Switch
 
         this.Invalidate();
     }
+    public static readonly BindableProperty LabelPlacementProperty = BindableProperty.Create(
+    nameof(LabelPlacement), typeof(LabelPlacement), typeof(Switch), LabelPlacement.End,
+    propertyChanged: (bo, ov, nv) => ((IElement)bo).InvalidateMeasure());
+
+    public LabelPlacement LabelPlacement
+    {
+        get => (LabelPlacement)GetValue(LabelPlacementProperty);
+        set => SetValue(LabelPlacementProperty, value);
+    }
+
+
     public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
     public CornerRadius CornerRadius
     {
