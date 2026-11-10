@@ -33,7 +33,7 @@ internal class TabItemDrawable(TabItem view) : IDrawable
                     break;
             }
         }
-        canvas.ResetState();
+        canvas.RestoreState();
     }
 
     public void DrawPrimaryStyle(ICanvas canvas, RectF rect)

@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 namespace Material.Components.Maui;
 
 [ContentProperty(nameof(Items))]
-public class SegmentedButton
+public partial class SegmentedButton
     : TouchGraphicsView,
         IItemsElement<SegmentedItem>,
         IItemsSourceElement,
@@ -22,24 +22,23 @@ public class SegmentedButton
 {
     protected override void ChangeVisualState()
     {
-        if (this.ViewState is ViewState.Hovered or ViewState.Pressed)
+        if (this.ViewState is ViewState.Hovered or ViewState.Pressed && this.Items.Count > 0)
         {
-            var index = (int)(this.LastTouchPoint.X / (this.Bounds.Width / this.Items.Count));
+            var itemWidth = this.Bounds.Width / this.Items.Count;
+            var index = (int)(this.LastTouchPoint.X / itemWidth);
+            index = Math.Clamp(index, 0, this.Items.Count - 1);
+
             for (var i = 0; i < this.Items.Count; i++)
             {
                 var item = this.Items[i];
-                if (item is not null)
-                {
-
-                    item.ViewState = i == index ? this.ViewState : ViewState.Normal;
-                }            }
+                if (item != null) item.ViewState = i == index ? this.ViewState : ViewState.Normal;
+            }
         }
         else
         {
             foreach (var item in this.Items)
-            { 
-                if(item is not null)
-                    item.ViewState = this.ViewState; 
+            {
+                if (item != null) item.ViewState = this.ViewState;
             }
         }
     }
@@ -71,7 +70,7 @@ public class SegmentedButton
         nameof(MultiSelectMode),
         typeof(bool),
         typeof(SegmentedButton),
-        default
+        false
     );
 
     public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
@@ -86,6 +85,26 @@ public class SegmentedButton
     public static readonly BindableProperty OutlineColorProperty =
         IOutlineElement.OutlineColorProperty;
 
+
+    public static readonly BindableProperty SelectedIndexProperty = BindableProperty.Create(
+        nameof(SelectedIndex), typeof(int), typeof(SegmentedButton), -1,
+        propertyChanged: OnSelectedIndexPropertyChanged);
+
+    public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(
+        nameof(SelectedItem), typeof(object), typeof(SegmentedButton), null,
+        propertyChanged: OnSelectedItemPropertyChanged);
+
+    public static readonly BindableProperty DisplayMemberPathProperty = BindableProperty.Create(
+        nameof(DisplayMemberPath), typeof(string), typeof(SegmentedButton), default(string));
+    public static readonly BindableProperty SelectedBackgroundColorProperty = BindableProperty.Create(
+       nameof(SelectedBackgroundColor), typeof(Color), typeof(SegmentedButton), null,
+       propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+
+    public static readonly BindableProperty SelectedFontColorProperty = BindableProperty.Create(
+        nameof(SelectedFontColor), typeof(Color), typeof(SegmentedButton), null,
+        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged());
+
+
     public ObservableCollection<SegmentedItem?> Items
     {
         get => (ObservableCollection<SegmentedItem?>)this.GetValue(ItemsProperty);
@@ -97,7 +116,38 @@ public class SegmentedButton
         get => (IList)this.GetValue(ItemsSourceProperty);
         set => this.SetValue(ItemsSourceProperty, value);
     }
+    public static readonly BindableProperty SelectedItemsProperty = BindableProperty.Create(
+    nameof(SelectedItems),
+    typeof(IList),
+    typeof(SegmentedButton),
+    null,
+    BindingMode.TwoWay, 
+    propertyChanged: OnSelectedItemsPropertyChanged);
 
+    public IList? SelectedItems
+    {
+        get => (IList?)GetValue(SelectedItemsProperty);
+        set => SetValue(SelectedItemsProperty, value);
+    }
+
+    private static void OnSelectedItemsPropertyChanged(BindableObject bo, object ov, object nv)
+    {
+        var view = (SegmentedButton)bo;
+        if (!view.MultiSelectMode || nv is not IList newList) return;
+
+        // When the ViewModel updates the list, visually check/uncheck the UI items!
+        foreach (var item in view.Items)
+        {
+            if (item != null)
+            {
+                var model = item.Value ?? item;
+                item.IsSelected = newList.Contains(model);
+            }
+        }
+    }
+
+    public event EventHandler<ValueChangedEventArgs<object>>? SelectedItemChanged;
+    public event EventHandler<ValueChangedEventArgs<IEnumerable<object>>>? SelectedItemsChanged;
     void IItemsElement<SegmentedItem>.OnItemsCollectionChanged(
         object? sender,
         NotifyCollectionChangedEventArgs e
@@ -135,27 +185,52 @@ public class SegmentedButton
         NotifyCollectionChangedEventArgs e
     )
     {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            this.Items.Clear();
+            return;
+        }
+
         if (e.OldItems != null)
         {
             var index = e.OldStartingIndex;
-            foreach (string item in e.OldItems)
+            for (int i = 0; i < e.OldItems.Count; i++)
             {
-                this.Items.RemoveAt(index);
-                index++;
+                if (index < this.Items.Count)
+                    this.Items.RemoveAt(index);
             }
         }
 
         if (e.NewItems != null)
         {
             var index = e.NewStartingIndex;
-            foreach (string item in e.NewItems)
+            foreach (var item in e.NewItems)
             {
-                this.Items.Insert(index, new SegmentedItem { Text = item });
+                string displayText = string.Empty;
+
+                if (item != null)
+                {
+                    if (!string.IsNullOrEmpty(this.DisplayMemberPath))
+                    {
+                        var prop = item.GetType().GetProperty(this.DisplayMemberPath);
+                        displayText = prop?.GetValue(item)?.ToString() ?? item.ToString() ?? "";
+                    }
+                    else
+                    {
+                        displayText = item.ToString() ?? "";
+                    }
+                }
+
+                this.Items.Insert(index, new SegmentedItem { Text = displayText, Value = item });
                 index++;
             }
         }
     }
-
+    public Color? SelectedBackgroundColor { get => (Color?)GetValue(SelectedBackgroundColorProperty); set => SetValue(SelectedBackgroundColorProperty, value); }
+    public Color? SelectedFontColor { get => (Color?)GetValue(SelectedFontColorProperty); set => SetValue(SelectedFontColorProperty, value); }
+    public string DisplayMemberPath { get => (string)GetValue(DisplayMemberPathProperty); set => SetValue(DisplayMemberPathProperty, value); }
+    public object? SelectedItem { get => GetValue(SelectedItemProperty); set => SetValue(SelectedItemProperty, value); }
+    public int SelectedIndex { get => (int)GetValue(SelectedIndexProperty); set => SetValue(SelectedIndexProperty, value); }
     public bool MultiSelectMode
     {
         get => (bool)this.GetValue(MultiSelectModeProperty);
@@ -200,22 +275,6 @@ public class SegmentedButton
         set => this.SetValue(OutlineWidthProperty, value);
     }
 
-    public IEnumerable<SegmentedItem> SelectedItems
-    {
-        get
-        {
-            foreach (var item in this.Items)
-            {
-                if(item is null) continue;
-                if (item.IsSelected)
-                {
-                    yield return item;
-                }
-            }
-        }
-    }
-
-    public event EventHandler<SelectedItemsChangedArgs<SegmentedItem>>? SelectedItemsChanged;
 
     public SegmentedButton()
     {
@@ -226,85 +285,130 @@ public class SegmentedButton
 
     private void OnClicked(object? sender, TouchEventArgs e)
     {
-        var index = (int)(this.LastTouchPoint.X / (this.Bounds.Width / this.Items.Count));
-        this.Items[index]?.IsSelected = this.Items[index] is null ? !this.Items[index]!.IsSelected : false;
+
+#if WINDOWS
+        if (!this.IsLeftClick) return; // Prevent right-click toggles!
+#endif
+        if (this.Items.Count == 0) return;
+
+        var itemWidth = this.Bounds.Width / this.Items.Count;
+        var index = (int)(this.LastTouchPoint.X / itemWidth);
+        index = Math.Clamp(index, 0, this.Items.Count - 1);
+
+        var clickedItem = this.Items[index];
+        if (clickedItem == null) return;
+
+        if (this.MultiSelectMode)
+        {
+            var oldSelection = this.Items.Where(i => i?.IsSelected == true).Select(i => i!.Value ?? i).ToList();
+
+            // Toggle freely in Multi-Select
+            clickedItem.IsSelected = !clickedItem.IsSelected;
+            var model = clickedItem.Value ?? clickedItem;
+
+            // 1. Maintain the bound IList if it exists
+            if (this.SelectedItems != null)
+            {
+                if (clickedItem.IsSelected && !this.SelectedItems.Contains(model))
+                    this.SelectedItems.Add(model);
+                else if (!clickedItem.IsSelected && this.SelectedItems.Contains(model))
+                    this.SelectedItems.Remove(model);
+            }
+
+            // 2. Fire the traditional event for Code-Behind users
+            var currentSelection = this.Items.Where(i => i?.IsSelected == true).Select(i => i!.Value ?? i).ToList();
+            SelectedItemsChanged?.Invoke(this, new ValueChangedEventArgs<IEnumerable<object>>(oldSelection, currentSelection));
+
+            if (this.Command?.CanExecute(this.CommandParameter ?? currentSelection) is true)
+                this.Command?.Execute(this.CommandParameter ?? currentSelection);
+        }
+        else
+        {
+            // Radio Group Mode: Enforce Single Selection
+            if (!clickedItem.IsSelected)
+            {
+                this.SelectedIndex = index; // Triggers OnSelectedIndexChanged which handles the rest!
+            }
+        }
     }
 
-    protected override void OnMoveHoverInteraction(object? sender, TouchEventArgs e)
+    private static void OnSelectedIndexPropertyChanged(BindableObject bo, object ov, object nv)
     {
-        this.LastTouchPoint = e.Touches[0];
-        this.ChangeVisualState();
+        var view = (SegmentedButton)bo;
+        if (view.MultiSelectMode) return;
+
+        int index = (int)nv;
+        object? oldVal = view.SelectedItem ?? view.Items.FirstOrDefault(i => i != null && i.IsSelected)?.Value;
+        object? newVal = null;
+
+        for (int i = 0; i < view.Items.Count; i++)
+        {
+            var item = view.Items[i];
+            if (item != null)
+            {
+                bool shouldSelect = (i == index);
+                item.IsSelected = shouldSelect;
+                if (shouldSelect) newVal = item.Value ?? item;
+            }
+        }
+
+        view.SelectedItem = newVal;
+        view.SelectedItemChanged?.Invoke(view, new ValueChangedEventArgs<object>(oldVal, newVal));
+
+        if (view.Command?.CanExecute(view.CommandParameter ?? newVal) is true)
+            view.Command?.Execute(view.CommandParameter ?? newVal);
     }
 
-    internal void OnSelectedItemChanged(SegmentedItem item)
+    private static void OnSelectedItemPropertyChanged(BindableObject bo, object ov, object nv)
+    {
+        var view = (SegmentedButton)bo;
+        if (view.MultiSelectMode) return;
+
+        var match = view.Items.FirstOrDefault(m => m == nv || m?.Value == nv);
+        if (match != null)
+            view.SelectedIndex = view.Items.IndexOf(match);
+    }
+
+    internal void OnSegmentedItemSelected(SegmentedItem item)
     {
         if (item.IsSelected && !this.MultiSelectMode)
         {
             foreach (var _item in this.Items)
             {
-                if(_item is null) continue;
+                if (_item is null) continue;
                 if (!_item.Equals(item))
                 {
                     _item.IsSelected = false;
                 }
             }
         }
-
-        this.SelectedItemsChanged?.Invoke(this, new(this.SelectedItems));
-
-        if (this.Command?.CanExecute(this.CommandParameter ?? this.SelectedItems) is true)
-            this.Command?.Execute(this.CommandParameter ?? this.SelectedItems);
     }
+    protected override void OnMoveHoverInteraction(object? sender, TouchEventArgs e)
+    {
+        this.LastTouchPoint = e.Touches[0];
+        this.ChangeVisualState();
+    }
+    
+
+
+
 
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
     {
-        var maxWidth = Math.Min(
-            Math.Min(widthConstraint, this.MaximumWidthRequest),
-            this.WidthRequest != -1 ? this.WidthRequest : double.PositiveInfinity
-        );
-        var maxHeight = Math.Min(
-            Math.Min(heightConstraint, this.MaximumHeightRequest),
-            this.HeightRequest != -1 ? this.HeightRequest : double.PositiveInfinity
-        );
+        var maxWidth = Math.Min(widthConstraint, this.MaximumWidthRequest);
+        var maxHeight = Math.Min(heightConstraint, this.MaximumHeightRequest);
 
-        var scale =
-            (this.HeightRequest != -1 ? this.HeightRequest : Math.Min(40f, maxHeight)) / 40f;
-
-        var maxItemWidth = 0d;
+        var scale = (this.HeightRequest != -1 ? this.HeightRequest : Math.Min(40f, maxHeight)) / 40f;
         var needHeight = 40f * scale;
 
-        foreach (var item in this.Items)
-        {
-            if(item is null) continue;
-            var iconSize = 18f * scale;
-            var textSize = this.GetStringSize(item.Text);
-            //16 + iconSize + 8 + textSize.Width + 16
-            maxItemWidth =
-                textSize == SizeF.Zero
-                    ? Math.Max(maxItemWidth, iconSize + iconSize + (16f + 8f + 16f) * scale)
-                    : Math.Max(maxItemWidth, iconSize + 16f + textSize.Width + (8f + 16f) * scale);
-        }
+        // Automatically divide width equally if constrained, else shrink to fit content
+        var width = this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
+            ? maxWidth
+            : this.Margin.HorizontalThickness + (this.WidthRequest != -1 ? this.WidthRequest : 200); // fallback 200
 
-        var width =
-            this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
-                ? maxWidth
-                : this.Margin.HorizontalThickness
-                    + Math.Max(
-                        this.MinimumWidthRequest,
-                        this.WidthRequest == -1
-                            ? Math.Min(maxWidth, maxItemWidth * this.Items.Count)
-                            : this.WidthRequest
-                    );
-        var height =
-            this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
-                ? maxHeight
-                : this.Margin.VerticalThickness
-                    + Math.Max(
-                        this.MinimumHeightRequest,
-                        this.HeightRequest == -1
-                            ? Math.Min(maxHeight, needHeight)
-                            : this.HeightRequest
-                    );
+        var height = this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
+            ? maxHeight
+            : this.Margin.VerticalThickness + (this.HeightRequest == -1 ? needHeight : this.HeightRequest);
 
         this.DesiredSize = new Size(Math.Ceiling(width), Math.Ceiling(height));
         return this.DesiredSize;

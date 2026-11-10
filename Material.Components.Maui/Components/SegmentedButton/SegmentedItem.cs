@@ -2,15 +2,17 @@
 
 namespace Material.Components.Maui;
 
-public class SegmentedItem
+public partial class SegmentedItem
     : VisualElement,
         IIconElement,
         ITextElement,
+        IFontElement,
         IBackgroundElement,
         IStateLayerElement,
         IVisualTreeElement,
         IDisposable
 {
+    public object? Value { get; set; }
     protected bool IsVisualStateChanging { get; set; }
     ViewState viewState = ViewState.Normal;
 
@@ -34,7 +36,7 @@ public class SegmentedItem
     void IElement.InvalidateMeasure()
     {
     }
-
+    internal float CheckAnimationPercent { get; private set; } = 0f;
     protected override void ChangeVisualState()
     {
         this.IsVisualStateChanging = true;
@@ -49,7 +51,28 @@ public class SegmentedItem
 
         VisualStateManager.GoToState(this, state);
         this.IsVisualStateChanging = false;
-        (this as IElement)?.OnPropertyChanged();
+        // --- ANIMATE THE CHECKMARK FOR MULTI-SELECT MODE! ---
+        var parent = this.GetParentElement<SegmentedButton>();
+        if (parent != null && parent.MultiSelectMode)
+        {
+            float start = this.CheckAnimationPercent;
+            float end = this.IsSelected ? 1f : 0f;
+
+            this.AbortAnimation("CheckAnim");
+            var anim = new Microsoft.Maui.Controls.Animation(v =>
+            {
+                this.CheckAnimationPercent = (float)v;
+                ((IElement)this).OnPropertyChanged();
+            }, start, end);
+
+            anim.Commit(this, "CheckAnim", length: 200, easing: Easing.CubicOut);
+        }
+        else
+        {
+            this.CheckAnimationPercent = this.IsSelected ? 1f : 0f;
+        }
+
+        ((IElement)this).OnPropertyChanged();
     }
 
     public static readonly new BindableProperty IsEnabledProperty = IElement.IsEnabledProperty;
@@ -63,7 +86,7 @@ public class SegmentedItem
             var item = (SegmentedItem)bo;
             item.ChangeVisualState();
             var parent = item.GetParentElement<SegmentedButton>();
-            parent?.OnSelectedItemChanged(item);
+            parent?.OnSegmentedItemSelected(item);
         }
     );
 
@@ -84,6 +107,16 @@ public class SegmentedItem
     public static readonly BindableProperty StateLayerColorProperty =
         IStateLayerElement.StateLayerColorProperty;
 
+    public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
+    public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
+    public static readonly BindableProperty FontFamilyProperty = IFontElement.FontFamilyProperty;
+    public static readonly BindableProperty FontWeightProperty = IFontElement.FontWeightProperty;
+    public static readonly BindableProperty FontIsItalicProperty = IFontElement.FontIsItalicProperty;
+    public Color FontColor { get => (Color)GetValue(FontColorProperty); set => SetValue(FontColorProperty, value); }
+    public float FontSize { get => (float)GetValue(FontSizeProperty); set => SetValue(FontSizeProperty, value); }
+    public string FontFamily { get => (string)GetValue(FontFamilyProperty); set => SetValue(FontFamilyProperty, value); }
+    public FontWeight FontWeight { get => (FontWeight)GetValue(FontWeightProperty); set => SetValue(FontWeightProperty, value); }
+    public bool FontIsItalic { get => (bool)GetValue(FontIsItalicProperty); set => SetValue(FontIsItalicProperty, value); }
     public new Color BackgroundColor
     {
         get => (Color)this.GetValue(BackgroundColorProperty);
@@ -124,8 +157,8 @@ public class SegmentedItem
 
     Shape IShapeElement.Shape
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Shape.None;
+        set { }
     }
     public Color StateLayerColor
     {
