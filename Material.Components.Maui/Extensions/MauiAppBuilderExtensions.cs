@@ -11,7 +11,7 @@ public static class MauiAppBuilderExtensions
             (handlers) =>
             {
                 handlers.AddHandler(typeof(TextField), typeof(TextFieldHandler));
-
+                handlers.AddHandler<Popup, PopupHandler>();
             }
         );
     }

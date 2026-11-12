@@ -1,5 +1,5 @@
 ﻿namespace Material.Components.Maui;
-internal class NavigationDrawerItemDrawable(NavigationDrawerItem view) : IDrawable
+internal partial class NavigationDrawerItemDrawable(NavigationDrawerItem view) : IDrawable
 {
     private readonly NavigationDrawerItem view = view;
 
@@ -31,6 +31,6 @@ internal class NavigationDrawerItemDrawable(NavigationDrawerItem view) : IDrawab
        );
 
         canvas.DrawText(this.view, new RectF(60f, 0, rect.Width - 40f, rect.Height), HorizontalAlignment.Left);
-        canvas.ResetState();
+        canvas.RestoreState();
     }
 }

@@ -154,6 +154,9 @@
 		<MauiXaml Update="Styles\ProgressIndicatorStyles.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
+		<MauiXaml Update="Styles\RichLabelStyles.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="Styles\SegmentedItemStyles.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
@@ -166,6 +169,9 @@
 		<MauiXaml Update="Styles\ComboBoxStyle.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
+		<MauiXaml Update="Styles\SliderStyles.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
 		<MauiXaml Update="Styles\SwitchStyles.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
@@ -173,6 +179,12 @@
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 		<MauiXaml Update="Styles\TabsStyles.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Styles\TransitionLabelStyles.xaml">
+		  <Generator>MSBuild:Compile</Generator>
+		</MauiXaml>
+		<MauiXaml Update="Styles\VinylRecordStyles.xaml">
 		  <Generator>MSBuild:Compile</Generator>
 		</MauiXaml>
 	</ItemGroup>
@@ -185,7 +197,7 @@
 		<AssemblyVersion></AssemblyVersion>
 		<FileVersion></FileVersion>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>0.2.2-preview</Version>
+		<Version>0.2.4-preview</Version>
 	</PropertyGroup>
 
 </Project>

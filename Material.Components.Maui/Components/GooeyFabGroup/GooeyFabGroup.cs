@@ -8,30 +8,6 @@ using System.Windows.Input;
 
 namespace Material.Components.Maui;
 
-public enum GooeyPlacement
-{   
-    // Linear (Official Material Speed Dial)
-    Up,
-    Down,
-    Left,
-    Right,
-    TopLeft,
-    TopRight,
-    BottomLeft,
-    BottomRight
-}
-
-public class GooeyItemClickedEventArgs : EventArgs
-{
-    public object? Item { get; }
-    public View View { get; }
-
-    public GooeyItemClickedEventArgs(object? item, View view)
-    {
-        this.Item = item;
-        this.View = view;
-    }
-}
 
 [ContentProperty(nameof(SubFabs))]
 public partial class GooeyFabGroup : ContentView, IItemsSourceElement
@@ -44,7 +20,16 @@ public partial class GooeyFabGroup : ContentView, IItemsSourceElement
     public event EventHandler? Opening;
     public event EventHandler? Closing; 
     public event EventHandler<GooeyItemClickedEventArgs>? ItemClicked;
-    
+    public static readonly BindableProperty ArcAngleProperty = BindableProperty.Create(
+    nameof(ArcAngle), typeof(double), typeof(GooeyFabGroup), 90.0,
+    propertyChanged: (bo, ov, nv) => { var g = (GooeyFabGroup)bo; if (g.IsOpen) g.AnimateSubFabsAsync(true); });
+
+    public static readonly BindableProperty ItemSpacingProperty = BindableProperty.Create(
+        nameof(ItemSpacing), typeof(double), typeof(GooeyFabGroup), 16.0,
+        propertyChanged: (bo, ov, nv) => { var g = (GooeyFabGroup)bo; if (g.IsOpen) g.AnimateSubFabsAsync(true); });
+
+    public double ArcAngle { get => (double)GetValue(ArcAngleProperty); set => SetValue(ArcAngleProperty, value); }
+    public double ItemSpacing { get => (double)GetValue(ItemSpacingProperty); set => SetValue(ItemSpacingProperty, value); }
     public static readonly BindableProperty MainFabProperty = BindableProperty.Create(
         nameof(MainFab), typeof(View), typeof(GooeyFabGroup), null,
         propertyChanged: (bo, ov, nv) => ((GooeyFabGroup)bo).OnMainFabChanged((View)nv));
@@ -319,17 +304,18 @@ public partial class GooeyFabGroup : ContentView, IItemsSourceElement
         int count = SubFabs.Count;
         if (count == 0) return;
 
-        if (isOpen)
-            Opening?.Invoke(this, EventArgs.Empty);
-        else
-            Closing?.Invoke(this, EventArgs.Empty);
+        if (isOpen) Opening?.Invoke(this, EventArgs.Empty);
+        else Closing?.Invoke(this, EventArgs.Empty);
 
         if (this.RotateMainFabOnOpen && this.MainFab != null)
         {
             _ = this.MainFab.RotateToAsync(isOpen ? 45 : 0, 250, Easing.CubicOut);
         }
 
-        double angleStep = count > 1 ? (Math.PI / 2) / (count - 1) : 0;
+        // Convert ArcAngle (e.g. 90 or 120 deg) to Radians
+        double totalArcRadians = Math.PI * (this.ArcAngle / 180.0);
+        double angleStep = count > 1 ? totalArcRadians / (count - 1) : 0;
+
         var tasks = new List<Task>();
 
         for (int i = 0; i < count; i++)
@@ -344,23 +330,25 @@ public partial class GooeyFabGroup : ContentView, IItemsSourceElement
                 double targetX = 0;
                 double targetY = 0;
 
-                // 1. Linear Directions
+                // 1. Linear Directions (Using Distance + ItemSpacing!)
+                double linearOffset = (i + 1) * (this.Distance + this.ItemSpacing);
+
                 switch (Placement)
                 {
                     case GooeyPlacement.Up:
-                        targetX = 0; targetY = -((i + 1) * Distance); break;
+                        targetX = 0; targetY = -linearOffset; break;
                     case GooeyPlacement.Down:
-                        targetX = 0; targetY = ((i + 1) * Distance); break;
+                        targetX = 0; targetY = linearOffset; break;
                     case GooeyPlacement.Left:
-                        targetX = -((i + 1) * Distance); targetY = 0; break;
+                        targetX = -linearOffset; targetY = 0; break;
                     case GooeyPlacement.Right:
-                        targetX = ((i + 1) * Distance); targetY = 0; break;
+                        targetX = linearOffset; targetY = 0; break;
 
-                    // 2. Arc / Quadrants
+                    // 2. Arc / Fan Placement
                     default:
-                        double angle = count > 1 ? i * angleStep : Math.PI / 4;
-                        double rawX = Distance * Math.Cos(angle);
-                        double rawY = Distance * Math.Sin(angle);
+                        double angle = count > 1 ? i * angleStep : (totalArcRadians / 2.0);
+                        double rawX = this.Distance * Math.Cos(angle);
+                        double rawY = this.Distance * Math.Sin(angle);
 
                         switch (Placement)
                         {
@@ -376,7 +364,6 @@ public partial class GooeyFabGroup : ContentView, IItemsSourceElement
                         break;
                 }
 
-                // Add 25ms stagger per item for that fluid organic cascade!
                 int delay = i * 25;
                 tasks.Add(Task.Run(async () =>
                 {
@@ -398,9 +385,7 @@ public partial class GooeyFabGroup : ContentView, IItemsSourceElement
 
         await Task.WhenAll(tasks);
 
-        if (isOpen)
-            Opened?.Invoke(this, EventArgs.Empty);
-        else
-            Closed?.Invoke(this, EventArgs.Empty);
+        if (isOpen) Opened?.Invoke(this, EventArgs.Empty);
+        else Closed?.Invoke(this, EventArgs.Empty);
     }
 }

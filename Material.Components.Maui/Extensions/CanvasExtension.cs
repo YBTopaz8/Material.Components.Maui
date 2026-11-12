@@ -144,7 +144,7 @@ internal static class CanvasExtension
     {
         if (viewState is ViewState.Hovered)
         {
-            canvas.FillColor = element.StateLayerColor.WithAlpha(StateLayerOpacity.Hovered);
+            canvas.FillColor = element.StateLayerColor?.WithAlpha(StateLayerOpacity.Hovered);
             canvas.FillRectangle(rect);
         }
         else if (viewState is ViewState.Pressed)
@@ -187,6 +187,7 @@ internal static class CanvasExtension
         VerticalAlignment vertical = VerticalAlignment.Center
     ) where TElement : IFontElement
     {
+
         if (rect.Width > 0 && rect.Height > 0)
             canvas.DrawText(
                 element,
@@ -203,7 +204,7 @@ internal static class CanvasExtension
         this ICanvas canvas,
         TElement element,
         string text,
-        Color fontColor,
+        Color? fontColor,
         float fontSize,
         RectF rect,
         HorizontalAlignment horizontal = HorizontalAlignment.Center,
@@ -218,9 +219,12 @@ internal static class CanvasExtension
             var font = new Microsoft.Maui.Graphics.Font(element.FontFamily, weight, style);
     
             canvas.Font = font;
-            canvas.FontColor = fontColor.WithAlpha(
+
+
+            canvas.FontColor = fontColor?.WithAlpha(
                 element.ViewState is ViewState.Disabled ? 0.38f : 1f
             );
+            
             canvas.FontSize = fontSize;
             canvas.DrawString(text, rect, horizontal, vertical);
         }

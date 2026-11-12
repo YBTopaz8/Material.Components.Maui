@@ -26,7 +26,7 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
         platformView.Connect(this.VirtualView);
         platformView.TextChanged += this.OnTextChanged;
         platformView.SelectionChanged += this.OnSelectionChanged;
-
+        platformView.FocusChange += this.OnPlatformFocusChange;
         var doubleTapGesture = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
         doubleTapGesture.Tapped += OnDoubleTapped;
         this.VirtualView.GestureRecognizers.Add(doubleTapGesture);
@@ -37,7 +37,9 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
     {
         platformView.Disconnect();
         platformView.TextChanged -= this.OnTextChanged;
-        platformView.SelectionChanged -= this.OnSelectionChanged;
+        platformView.SelectionChanged -= this.OnSelectionChanged; 
+        
+        platformView.FocusChange -= this.OnPlatformFocusChange;
         var doubleTap = this.VirtualView.GestureRecognizers.OfType<TapGestureRecognizer>().FirstOrDefault(g => g.NumberOfTapsRequired == 2);
         if (doubleTap != null)
         {
@@ -50,12 +52,21 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
         //// Select All Text
-        //if (!string.IsNullOrEmpty(this.VirtualView.Text))
-        //{
-        //    this.VirtualView.UpdateSelectionRange(new TextRange(0, this.VirtualView.Text.Length));
-        //    // You might need to force a redraw here depending on your PlatformTextField logic
-        //    this.PlatformView?.Invalidate();
-        //}
+        if (!string.IsNullOrEmpty(this.VirtualView.Text))
+        {
+            this.VirtualView.UpdateSelectionRange(new TextRange(0, this.VirtualView.Text.Length));
+            this.PlatformView?.Invalidate();
+        }
+    }
+    private void OnPlatformFocusChange(object? sender, Android.Views.View.FocusChangeEventArgs e)
+    {
+        if (this.VirtualView != null)
+        {
+            if (e.HasFocus && !this.VirtualView.IsFocused)
+                this.VirtualView.Focus();
+            else if (!e.HasFocus && this.VirtualView.IsFocused)
+                this.VirtualView.Unfocus();
+        }
     }
     private void OnTextChanged(object? sender, EditTextChangedEventArgs e)
     {

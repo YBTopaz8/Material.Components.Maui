@@ -102,7 +102,7 @@ internal partial class ComboBoxDrawable(ComboBox view) : IDrawable, IDisposable
 
         var fontSize = 12f + (view.FontSize - 12f) * percent;
 
-        canvas.FontColor = view.LabelFontColor.MultiplyAlpha(
+        canvas.FontColor = view.LabelFontColor?.MultiplyAlpha(
             view.ViewState is ViewState.Disabled ? 0.38f : 1f
         );
 

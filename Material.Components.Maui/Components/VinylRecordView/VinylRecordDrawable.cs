@@ -1,4 +1,4 @@
-﻿namespace Material.Components.Maui.Components;
+﻿namespace Material.Components.Maui;
 
 internal class VinylRecordDrawable(VinylRecordView view) : IDrawable
 {

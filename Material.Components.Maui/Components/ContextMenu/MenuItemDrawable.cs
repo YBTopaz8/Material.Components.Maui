@@ -42,8 +42,7 @@ internal class MenuItemDrawable(MenuItem view) : IDrawable
                 canvas.FillPath(path);
             }
         }
-
-        canvas.ResetState();
+        canvas.RestoreState();
     
 }
 }

@@ -95,7 +95,7 @@ public partial class SegmentedItem
     public static readonly BindableProperty TextProperty = BindableProperty.Create(
         nameof(Text),
         typeof(string),
-        typeof(ITextElement),
+        typeof(SegmentedItem),
         default,
         propertyChanged: (bo, ov, nv) =>
             ((IElement?)((SegmentedItem)bo)?.Parent)?.InvalidateMeasure()

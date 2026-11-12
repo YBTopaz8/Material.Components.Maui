@@ -1,9 +1,15 @@
-﻿using Microsoft.Maui.Platform;
+﻿#if WINDOWS
+using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Grid = Microsoft.Maui.Controls.Grid;
 using Page = Microsoft.Maui.Controls.Page;
 using WPopup = Microsoft.UI.Xaml.Controls.Primitives.Popup;
+using MauiApplication = Microsoft.Maui.Controls.Application;
+using SolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
+
 
 namespace Material.Components.Maui;
 
@@ -13,22 +19,50 @@ public partial class Popup
     private ContentPanel? platformAnchor;
     private FrameworkElement? platformOutside;
 
-    private void PlatformShow(Page? anchor)
+    public void PlatformShow(VisualElement? anchor)
     {
-        var context = anchor?.Handler?.MauiContext;
-        if(context == null)
-            throw new InvalidOperationException("MauiContext is null. Ensure the anchor page has been properly initialized.");
+        var page = anchor as Page ?? FindParentPage(anchor) ?? MauiApplication.Current?.Windows.FirstOrDefault()?.Page;
+        var context = anchor?.Handler?.MauiContext ?? page?.Handler?.MauiContext ?? MauiApplication.Current?.Handler?.MauiContext;
+
+        if (context == null)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Task.Delay(100);
+                if (MauiApplication.Current?.Windows.FirstOrDefault()?.Page?.Handler != null)
+                    PlatformShow(anchor);
+            });
+            return;
+        }
+
+        // 1. Resolve XamlRoot safely from the Anchor, Page, or Native Window
+        var xamlRoot = (anchor?.Handler?.PlatformView as FrameworkElement)?.XamlRoot
+            ?? (page?.Handler?.PlatformView as FrameworkElement)?.XamlRoot;
+
+        if (xamlRoot == null)
+        {
+            var winUIWindow = MauiApplication.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
+            xamlRoot = (winUIWindow?.Content as FrameworkElement)?.XamlRoot;
+        }
+
         var platformContent = this.Content.ToPlatform(context);
 
         if (this.container == null)
         {
-            var anch = anchor?.ToPlatform(context) as ContentPanel;
-            if (anch is not null)
+            var anch = (anchor ?? page)?.ToPlatform(context) as ContentPanel;
+            if (anch != null)
                 this.platformAnchor = anch;
+
+            var windowWidth = xamlRoot?.Size.Width ?? 1200;
+            var windowHeight = xamlRoot?.Size.Height ?? 800;
+
+            // Fluent Smoke Backdrop
             var outside = new Grid
             {
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
+                WidthRequest = windowWidth,
+                HeightRequest = windowHeight
             };
 
             var root = new AbsoluteLayout
@@ -36,14 +70,30 @@ public partial class Popup
                 Parent = this,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                BackgroundColor = Color.FromArgb("#80808080"),
+                WidthRequest = windowWidth,
+                HeightRequest = windowHeight,
                 Children = { outside, this.Content },
             };
 
             this.platformOutside = outside.ToPlatform(context);
             var platformRoot = root.ToPlatform(context);
 
+            // Native Windows 11 Smoke Brush
+            if (Microsoft.UI.Xaml.Application.Current.Resources.TryGetValue("ContentDialogSmokeFill", out var smokeResource)
+                && smokeResource is Microsoft.UI.Xaml.Media.Brush smokeBrush)
+            {
+                ((Panel)platformRoot).Background = smokeBrush;
+            }
+            else
+            {
+                ((Panel)platformRoot).Background = new SolidColorBrush(Windows.UI.Color.FromArgb(85, 0, 0, 0));
+            }
+
             this.platformOutside.Tapped += this.OnOutsideTapped;
+
+            // Physical ThemeShadow elevation
+            platformContent.Translation = new System.Numerics.Vector3(0, 0, 32);
+            platformContent.Shadow = new ThemeShadow();
 
             this.container = new WPopup
             {
@@ -52,79 +102,55 @@ public partial class Popup
                 LightDismissOverlayMode = LightDismissOverlayMode.Off,
             };
 
-            this.platformAnchor!.Children.Add(this.container);
+            // Fluent Motion Transitions
+            var transitions = new TransitionCollection();
+            if (this.HorizontalOptions == LayoutAlignment.Start)
+            {
+                transitions.Add(new EdgeUIThemeTransition
+                {
+                    Edge = Microsoft.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Left
+                });
+            }
+            else
+            {
+                transitions.Add(new PopupThemeTransition());
+            }
+            this.container.ChildTransitions = transitions;
 
             this.container.Opened += this.OnContainerOpened;
             this.container.Closed += this.OnContainerClosed;
-
-            outside.SetBinding(
-                WidthRequestProperty,
-                new Binding(
-                    "Width",
-                    source: new RelativeBindingSource(
-                        RelativeBindingSourceMode.FindAncestor,
-                        typeof(Page)
-                    )
-                )
-            );
-            outside.SetBinding(
-                HeightRequestProperty,
-                new Binding(
-                    "Height",
-                    source: new RelativeBindingSource(
-                        RelativeBindingSourceMode.FindAncestor,
-                        typeof(Page)
-                    )
-                )
-            );
-
-            root.SetBinding(
-                WidthRequestProperty,
-                new Binding(
-                    "Width",
-                    source: new RelativeBindingSource(
-                        RelativeBindingSourceMode.FindAncestor,
-                        typeof(Page)
-                    )
-                )
-            );
-            root.SetBinding(
-                HeightRequestProperty,
-                new Binding(
-                    "Height",
-                    source: new RelativeBindingSource(
-                        RelativeBindingSourceMode.FindAncestor,
-                        typeof(Page)
-                    )
-                )
-            );
         }
 
-        platformContent.Measure(
-            new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity)
-        );
-        var size = platformContent.DesiredSize;
-        var x =
-            this.OffsetX
-            + this.HorizontalOptions switch
-            {
-                LayoutAlignment.Start => 0,
-                LayoutAlignment.End => this.platformAnchor?.ActualWidth ?? 0 - size.Width,
-                _ => (this.platformAnchor?.ActualWidth ?? 0 - size.Width) / 2
-            };
-        var y =
-            this.OffsetY
-            + this.VerticalOptions switch
-            {
-                LayoutAlignment.Start => 0,
-                LayoutAlignment.End => this.platformAnchor?.ActualHeight ?? 0 - size.Height,
-                _ => (this.platformAnchor?.ActualHeight ?? 0 - size.Height) / 2
-            };
+        // ==============================================================
+        // CRITICAL FIX: EXPLICITLY SET XAML ROOT ON THE UNPARENTED POPUP
+        // ==============================================================
+        if (xamlRoot != null)
+        {
+            this.container.XamlRoot = xamlRoot;
+        }
 
-        this.Content.SetValue(
-            AbsoluteLayout.LayoutBoundsProperty,
-            new Rect(x, y, size.Width, size.Height)
-        );
+        platformContent.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var size = platformContent.DesiredSize;
+
+        var actualWidth = xamlRoot?.Size.Width ?? this.platformAnchor?.ActualWidth ?? 1200;
+        var actualHeight = xamlRoot?.Size.Height ?? this.platformAnchor?.ActualHeight ?? 800;
+
+        var x = this.OffsetX + this.HorizontalOptions switch
+        {
+            LayoutAlignment.Start => 0,
+            LayoutAlignment.End => actualWidth - size.Width,
+            _ => (actualWidth - size.Width) / 2
+        };
+        var y = this.OffsetY + this.VerticalOptions switch
+        {
+            LayoutAlignment.Start => 0,
+            LayoutAlignment.End => actualHeight - size.Height,
+            _ => (actualHeight - size.Height) / 2
+        };
+
+        this.Content.SetValue(AbsoluteLayout.LayoutBoundsProperty, new Rect(x, y, size.Width, size.Height));
+
+        // This will now open cleanly without the COMException!
         this.container.IsOpen = true;
     }
 
@@ -159,10 +185,12 @@ public partial class Popup
             if (disposing)
             {
                 this.Close();
-                this.platformOutside?.Tapped -= this.OnOutsideTapped;
-                this.container?.Opened -= this.OnContainerOpened;
-                this.container?.Closed -= this.OnContainerClosed;
-                this.platformAnchor?.Children.Remove(this.container);
+                if (this.platformOutside != null) this.platformOutside.Tapped -= this.OnOutsideTapped;
+                if (this.container != null)
+                {
+                    this.container.Opened -= this.OnContainerOpened;
+                    this.container.Closed -= this.OnContainerClosed;
+                }
             }
             this.disposedValue = true;
         }
@@ -174,3 +202,4 @@ public partial class Popup
         GC.SuppressFinalize(this);
     }
 }
+#endif

@@ -1,6 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
-using Match = System.Text.RegularExpressions.Match;
 
 namespace Material.Components.Maui;
 
@@ -20,8 +18,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
 
         if (view.RipplePercent is not 0f and not 1f)
             canvas.DrawRipple(view, view.LastTouchPoint, view.RippleSize, view.RipplePercent);
-        else
-            canvas.DrawStateLayer(view, rect, view.ViewState);
 
         // Perform Layout & Render
         CalculateLayout(rect, recordBounds: true, canvas: canvas);
@@ -34,7 +30,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
         if (recordBounds)
             view.FormattedRuns.Clear();
 
-        // 1. Resolve source runs (Either from Inlines or from Markdown Text)
         var sourceRuns = ResolveRuns();
         if (sourceRuns.Count == 0) return 0f;
 
@@ -42,7 +37,7 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
         float currentX = bounds.Left - (view.EnableMarquee ? view.MarqueeOffset : 0f);
         float currentY = bounds.Top;
         float lineHeight = defaultFontSize + view.LineSpacing;
-        float spaceWidth = 5f;
+        float spaceWidth = 6f;
         float maxX = currentX;
 
         foreach (var run in sourceRuns)
@@ -51,24 +46,37 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
             var font = ResolveFont(run);
             lineHeight = Math.Max(lineHeight, fontSize + view.LineSpacing);
 
-            // Split into words for word-wrapping
             var words = run.Text.Split(' ');
 
             for (int i = 0; i < words.Length; i++)
             {
                 var word = words[i];
-                if (string.IsNullOrEmpty(word)) continue;
+                if (string.IsNullOrEmpty(word))
+                {
+                    currentX += spaceWidth;
+                    continue;
+                }
 
-                var wordSize = MeasureWord(word, font, fontSize);
+                // FIX: Real font measurement (NO MORE ESTIMATION!)
+                SizeF wordSize;
+                if (canvas != null)
+                {
+                    wordSize = canvas.GetStringSize(word, font, fontSize);
+                }
+                else
+                {
+                    wordSize = view.GetStringSize(word, fontSize);
+                }
 
-                // Word-Wrap (Only when marquee is disabled!)
+                // Word-Wrap: Only wrap whole words when marquee is off
                 if (!view.EnableMarquee && currentX + wordSize.Width > bounds.Right && currentX > bounds.Left)
                 {
                     currentX = bounds.Left;
                     currentY += lineHeight;
                 }
 
-                var wordRect = new RectF(currentX, currentY + (lineHeight - wordSize.Height) / 2f, wordSize.Width, wordSize.Height);
+                // Give 4px extra height buffer so descent characters (y, g, p) don't clip
+                var wordRect = new RectF(currentX, currentY + (lineHeight - wordSize.Height) / 2f, wordSize.Width + 1f, wordSize.Height);
 
                 if (recordBounds)
                 {
@@ -88,7 +96,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
                     view.FormattedRuns.Add(runInstance);
                 }
 
-                // Render to Canvas
                 if (canvas != null)
                 {
                     canvas.Font = font;
@@ -97,7 +104,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
 
                     canvas.DrawString(word, wordRect, HorizontalAlignment.Left, VerticalAlignment.Center);
 
-                    // Underline
                     if (run.IsUnderlined || run.IsLink)
                     {
                         canvas.StrokeColor = run.IsLink ? view.LinkColor : run.Color;
@@ -106,7 +112,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
                         canvas.DrawLine(wordRect.Left, lineY, wordRect.Right, lineY);
                     }
 
-                    // Strikethrough
                     if (run.IsStrikethrough)
                     {
                         canvas.StrokeColor = run.Color;
@@ -128,7 +133,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
     {
         var runs = new List<RichTextRun>();
 
-        // Priority 1: XAML Inlines
         if (view.Inlines.Count > 0)
         {
             foreach (var inline in view.Inlines)
@@ -152,7 +156,6 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
             return runs;
         }
 
-        // Priority 2: Markdown Text
         if (!string.IsNullOrEmpty(view.Text))
         {
             int lastIndex = 0;
@@ -163,15 +166,15 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
                     runs.Add(new RichTextRun { Text = view.Text.Substring(lastIndex, match.Index - lastIndex), Color = view.FontColor ?? Colors.Black });
                 }
 
-                if (match.Groups[1].Success)      // **bold**
+                if (match.Groups[1].Success)
                     runs.Add(new RichTextRun { Text = match.Groups[2].Value, IsBold = true, Color = view.FontColor ?? Colors.Black });
-                else if (match.Groups[3].Success) // __underline__
+                else if (match.Groups[3].Success)
                     runs.Add(new RichTextRun { Text = match.Groups[4].Value, IsUnderlined = true, Color = view.FontColor ?? Colors.Black });
-                else if (match.Groups[5].Success) // ~~strikethrough~~
+                else if (match.Groups[5].Success)
                     runs.Add(new RichTextRun { Text = match.Groups[6].Value, IsStrikethrough = true, Color = view.FontColor ?? Colors.Black });
-                else if (match.Groups[7].Success) // *italic*
+                else if (match.Groups[7].Success)
                     runs.Add(new RichTextRun { Text = match.Groups[8].Value, IsItalic = true, Color = view.FontColor ?? Colors.Black });
-                else if (match.Groups[9].Success) // [link](url)
+                else if (match.Groups[9].Success)
                     runs.Add(new RichTextRun { Text = match.Groups[9].Value, IsLink = true, LinkUrl = match.Groups[10].Value, Color = view.LinkColor });
 
                 lastIndex = match.Index + match.Length;
@@ -191,11 +194,5 @@ internal class RichLabelDrawable(RichLabel view) : IDrawable
         bool isItalic = run.IsItalic || view.FontIsItalic;
 
         return new Microsoft.Maui.Graphics.Font(family, weight, isItalic ? FontStyleType.Italic : FontStyleType.Normal);
-    }
-
-    private SizeF MeasureWord(string text, Microsoft.Maui.Graphics.Font font, float fontSize)
-    {
-        // Safe character-width approximation: fixes ICanvas.Font getter error completely!
-        return new SizeF(text.Length * (fontSize * 0.55f), fontSize + 2f);
     }
 }

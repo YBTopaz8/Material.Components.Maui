@@ -8,3 +8,4 @@ global using IElement = Material.Components.Maui.Interfaces.IElement;
 global using ITextElement = Material.Components.Maui.Interfaces.ITextElement;
 global using ViewState = Material.Components.Maui.Primitives.ViewState;
 global using MaterialColors = Material.Components.Maui.Tokens.MaterialColors;
+global using System.Diagnostics;

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace Material.Components.Maui;
 
@@ -29,6 +30,39 @@ public partial class ContextMenu
 
     void IElement.OnPropertyChanged() { }
 
+    public View? Caller { get; private set; }
+
+    public event EventHandler<ContextMenuOpenedEventArgs>? Opened;
+    public event EventHandler<ContextMenuItemClickedEventArgs>? ItemClicked;
+
+    public static readonly BindableProperty OpenedCommandProperty = BindableProperty.Create(
+        nameof(OpenedCommand), typeof(ICommand), typeof(ContextMenu), null);
+
+    public ICommand? OpenedCommand
+    {
+        get => (ICommand?)GetValue(OpenedCommandProperty);
+        set => SetValue(OpenedCommandProperty, value);
+    }
+    public static readonly BindableProperty MenuFontColorProperty = BindableProperty.Create(
+       nameof(MenuFontColor), typeof(Color), typeof(ContextMenu), null,
+       propertyChanged: (bo, ov, nv) =>
+       {
+           ((IElement)bo).OnPropertyChanged();
+       });
+
+    public static readonly BindableProperty MenuFontSizeProperty = BindableProperty.Create(
+        nameof(MenuFontSize), typeof(float), typeof(ContextMenu), 14f);
+
+    public static readonly BindableProperty MenuFontFamilyProperty = BindableProperty.Create(
+        nameof(MenuFontFamily), typeof(string), typeof(ContextMenu), null);
+
+    public static readonly BindableProperty MenuFontWeightProperty = BindableProperty.Create(
+        nameof(MenuFontWeight), typeof(FontWeight), typeof(ContextMenu), FontWeight.Regular);
+
+    public Color? MenuFontColor { get => (Color?)GetValue(MenuFontColorProperty); set => SetValue(MenuFontColorProperty, value); }
+    public float MenuFontSize { get => (float)GetValue(MenuFontSizeProperty); set => SetValue(MenuFontSizeProperty, value); }
+    public string? MenuFontFamily { get => (string?)GetValue(MenuFontFamilyProperty); set => SetValue(MenuFontFamilyProperty, value); }
+    public FontWeight MenuFontWeight { get => (FontWeight)GetValue(MenuFontWeightProperty); set => SetValue(MenuFontWeightProperty, value); }
     public static readonly BindableProperty ItemsProperty = IItemsElement<MenuItem>.ItemsProperty;
 
     public static readonly BindableProperty ItemsSourceProperty =
@@ -96,10 +130,16 @@ public partial class ContextMenu
 
         if (e.NewItems != null)
         {
+            var defColor = Application.Current?.PlatformAppTheme == AppTheme.Light ? Colors.Black : Colors.White;
+            if (defColor is null)
+            {
+                defColor = Colors.White;
+            }
             var index = e.NewStartingIndex;
             foreach (MenuItem item in e.NewItems)
             {
                 var visual = this.WrapMenuItem(item);
+                item.FontColor = this.MenuFontColor ?? defColor;
                 this.PART_Stack?.Insert(index, visual);
                 item.Clicked += this.OnMenuItemClicked;
                 index++;
@@ -110,14 +150,25 @@ public partial class ContextMenu
     private void OnMenuItemClicked(object? sender, TouchEventArgs e)
     {
         var item = sender as MenuItem;
-        item?.ViewState = ViewState.Normal;
-        this.Close(this.Items.IndexOf(item));
+        if (item == null) return;
+
+        item.ViewState = ViewState.Normal;
+
+        var model = item.Value ?? item;
+
+        this.Close(item);
+        var itemIndx = this.Items.IndexOf(item);
+        ItemClicked?.Invoke(this, new ContextMenuItemClickedEventArgs(model, this.Caller, itemIndx));
+
+
+        var param = this.ItemCommandParameter ?? model;
+        if (this.ItemCommand?.CanExecute(param) is true)
+        {
+            this.ItemCommand.Execute(param);
+        }
     }
 
-    void IItemsSourceElement.OnItemsSourceCollectionChanged(
-        object? sender,
-        NotifyCollectionChangedEventArgs e
-    )
+    void IItemsSourceElement.OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
@@ -129,8 +180,7 @@ public partial class ContextMenu
             var index = e.OldStartingIndex;
             for (int i = 0; i < e.OldItems.Count; i++)
             {
-                if (index < this.Items.Count)
-                    this.Items.RemoveAt(index);
+                if (index < this.Items.Count) this.Items.RemoveAt(index);
             }
         }
 
@@ -139,18 +189,42 @@ public partial class ContextMenu
             var index = e.NewStartingIndex;
             foreach (var item in e.NewItems)
             {
-                this.Items.Insert(index, new MenuItem { Text = item?.ToString() ?? string.Empty, Value = item });
+                var menuItem = new MenuItem
+                {
+                    Text = item?.ToString() ?? string.Empty,
+                    Value = item,
+
+                    FontColor = this.MenuFontColor ?? Colors.Red,
+                    FontSize = this.MenuFontSize,
+                    FontFamily = this.MenuFontFamily,
+                    FontWeight = this.MenuFontWeight
+                };
+
+                this.Items.Insert(index, menuItem);
                 index++;
             }
         }
     }
 
     public object? Result { get; private set; }
+    public static readonly BindableProperty ItemCommandProperty = BindableProperty.Create(
+        nameof(ItemCommand), typeof(ICommand), typeof(ContextMenu), null);
 
+    public static readonly BindableProperty ItemCommandParameterProperty = BindableProperty.Create(
+        nameof(ItemCommandParameter), typeof(object), typeof(ContextMenu), null);
+
+    public ICommand? ItemCommand { get => (ICommand?)GetValue(ItemCommandProperty); set => SetValue(ItemCommandProperty, value); }
+    public object? ItemCommandParameter { get => GetValue(ItemCommandParameterProperty); set => SetValue(ItemCommandParameterProperty, value); }
+
+    // This allows <Button Command="{Binding ShowCommand, Source={x:Reference CtxMenu}}" CommandParameter="{x:Reference MyBtn}" />
+    public ICommand ShowCommand { get; private set; }
+
+  
     public EventHandler<object?>? Closed;
 
     private void OnClosed(object? sender, object e)
     {
+
         this.Closed?.Invoke(sender, this.Result ?? e);
     }
 
@@ -158,10 +232,18 @@ public partial class ContextMenu
 
     private VerticalStackLayout? PART_Stack;
 
-    public ContextMenu() { }
+    public ContextMenu() 
+    {
+        ShowCommand = new Command<View>(anchorView =>
+        {
+            if (anchorView != null)
+                this.Show(anchorView);
+        });
+    }
 
     public void Show(View anchor, Point location = default)
     {
+        this.Caller = anchor;
         if (this.DesiredSize == Size.Zero)
             this.MeasureOverride(double.PositiveInfinity, double.PositiveInfinity);
 
@@ -169,6 +251,11 @@ public partial class ContextMenu
             this.PlatformShow(anchor);
         else
             this.PlatformShow(anchor, location);
+
+        Opened?.Invoke(this, new ContextMenuOpenedEventArgs(anchor));
+
+        if (this.OpenedCommand?.CanExecute(anchor) is true)
+            this.OpenedCommand.Execute(anchor);
     }
 
     protected override void OnApplyTemplate()
@@ -238,7 +325,7 @@ public partial class ContextMenu
             {
                 foreach (var item in this.Items)
                 {
-                    if(item is null) continue;
+                    if (item is null) continue;
                     item.Clicked -= this.OnMenuItemClicked;
                 }
             }

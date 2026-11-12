@@ -3,7 +3,7 @@
 public interface ILabelTextElement : IElement
 {
     string LabelText { get; set; }
-    Color LabelFontColor { get; set; }
+    Color? LabelFontColor { get; set; }
 
     public static readonly BindableProperty LabelTextProperty = BindableProperty.Create(
         nameof(LabelText),
@@ -18,6 +18,10 @@ public interface ILabelTextElement : IElement
         typeof(Color),
         typeof(ILabelTextElement),
         default,
-        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
-    );
+        propertyChanged: (bo, ov, nv) =>
+        {
+            Color nvv = (Color)nv;
+
+            ((IElement)bo).OnPropertyChanged();
+        });
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Material.Components.Maui.Components;
+namespace Material.Components.Maui;
 
 public partial class VinylRecordView
     : TouchGraphicsView,

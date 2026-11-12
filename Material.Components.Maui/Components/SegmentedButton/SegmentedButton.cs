@@ -65,7 +65,14 @@ public partial class SegmentedButton
 
     public static readonly BindableProperty ItemsSourceProperty =
         IItemsSourceElement.ItemsSourceProperty;
+    public static readonly BindableProperty AnimateExpansionProperty = BindableProperty.Create(
+    nameof(AnimateExpansion), typeof(bool), typeof(SegmentedButton), true);
 
+    public bool AnimateExpansion
+    {
+        get => (bool)GetValue(AnimateExpansionProperty);
+        set => SetValue(AnimateExpansionProperty, value);
+    }
     public static readonly BindableProperty MultiSelectModeProperty = BindableProperty.Create(
         nameof(MultiSelectMode),
         typeof(bool),
@@ -206,22 +213,22 @@ public partial class SegmentedButton
             var index = e.NewStartingIndex;
             foreach (var item in e.NewItems)
             {
-                string displayText = string.Empty;
+                var segmentedItem = new SegmentedItem { Value = item };
 
                 if (item != null)
                 {
                     if (!string.IsNullOrEmpty(this.DisplayMemberPath))
                     {
-                        var prop = item.GetType().GetProperty(this.DisplayMemberPath);
-                        displayText = prop?.GetValue(item)?.ToString() ?? item.ToString() ?? "";
+                       
+                        segmentedItem.SetBinding(SegmentedItem.TextProperty, new Binding(this.DisplayMemberPath, source: item));
                     }
                     else
                     {
-                        displayText = item.ToString() ?? "";
+                        segmentedItem.Text = item.ToString() ?? "";
                     }
                 }
 
-                this.Items.Insert(index, new SegmentedItem { Text = displayText, Value = item });
+                this.Items.Insert(index, segmentedItem);
                 index++;
             }
         }
@@ -320,7 +327,9 @@ public partial class SegmentedButton
             SelectedItemsChanged?.Invoke(this, new ValueChangedEventArgs<IEnumerable<object>>(oldSelection, currentSelection));
 
             if (this.Command?.CanExecute(this.CommandParameter ?? currentSelection) is true)
-                this.Command?.Execute(this.CommandParameter ?? currentSelection);
+                this.Command?.Execute(this.CommandParameter ?? currentSelection); 
+            
+            this.CheckAndAnimateExpansion();
         }
         else
         {
@@ -331,7 +340,46 @@ public partial class SegmentedButton
             }
         }
     }
+    private void CheckAndAnimateExpansion()
+    {
+        if (!this.AnimateExpansion)
+        {
+            ((IElement)this).InvalidateMeasure();
+            return;
+        }
 
+        double neededWidth = CalculateTotalNeededWidth();
+
+        // Expands visually smoothly to fit new checkmarks/text
+        if (neededWidth > this.Width && this.WidthRequest != -1)
+        {
+            this.Animate("ExpandSegment", new Animation(v =>
+            {
+                this.WidthRequest = v;
+            }, this.Width > 0 ? this.Width : neededWidth, neededWidth), length: 200, easing: Easing.CubicOut);
+        }
+        else
+        {
+            ((IElement)this).InvalidateMeasure();
+        }
+    }
+
+    private double CalculateTotalNeededWidth()
+    {
+        double maxItemWidth = 0d;
+        var scale = (this.HeightRequest != -1 ? this.HeightRequest : 40f) / 40f;
+
+        foreach (var item in this.Items)
+        {
+            if (item == null) continue;
+            var iconSize = 18f * scale;
+            var checkSize = (item.IsSelected && this.MultiSelectMode) ? (18f + 8f) * scale : 0f;
+            var textW = this.GetStringSize(item.Text).Width;
+
+            maxItemWidth = Math.Max(maxItemWidth, iconSize + checkSize + 16f + textW + (8f + 16f) * scale);
+        }
+        return maxItemWidth * Math.Max(1, this.Items.Count);
+    }
     private static void OnSelectedIndexPropertyChanged(BindableObject bo, object ov, object nv)
     {
         var view = (SegmentedButton)bo;
@@ -395,20 +443,34 @@ public partial class SegmentedButton
 
     protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
     {
-        var maxWidth = Math.Min(widthConstraint, this.MaximumWidthRequest);
-        var maxHeight = Math.Min(heightConstraint, this.MaximumHeightRequest);
+        var scale = (this.HeightRequest != -1 ? this.HeightRequest : 40f) / 40f;
 
-        var scale = (this.HeightRequest != -1 ? this.HeightRequest : Math.Min(40f, maxHeight)) / 40f;
-        var needHeight = 40f * scale;
+        double maxItemWidth = 0d;
+        double maxItemHeight = 40f * scale; // Standard minimum height
 
-        // Automatically divide width equally if constrained, else shrink to fit content
-        var width = this.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxWidth)
-            ? maxWidth
-            : this.Margin.HorizontalThickness + (this.WidthRequest != -1 ? this.WidthRequest : 200); // fallback 200
+        foreach (var item in this.Items)
+        {
+            if (item is null) continue;
+            var iconSize = 18f * scale;
+            var checkSize = (item.IsSelected && this.MultiSelectMode) ? (18f + 8f) * scale : 0f;
 
-        var height = this.VerticalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(maxHeight)
-            ? maxHeight
-            : this.Margin.VerticalThickness + (this.HeightRequest == -1 ? needHeight : this.HeightRequest);
+            var textSize = this.GetStringSize(item.Text);
+
+            // Allow height to grow dynamically if font is HUGE (Accessibility)
+            maxItemHeight = Math.Max(maxItemHeight, textSize.Height + 16f * scale);
+            maxItemWidth = Math.Max(maxItemWidth, iconSize + checkSize + 16f + textSize.Width + (8f + 16f) * scale);
+        }
+
+        var measuredWidth = maxItemWidth * Math.Max(1, this.Items.Count);
+
+        var width = this.WidthRequest != -1
+                             ? this.WidthRequest
+                             : measuredWidth;
+
+
+        var height = this.HeightRequest != -1
+            ? this.HeightRequest
+            : maxItemHeight;
 
         this.DesiredSize = new Size(Math.Ceiling(width), Math.Ceiling(height));
         return this.DesiredSize;

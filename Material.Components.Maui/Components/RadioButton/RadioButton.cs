@@ -10,8 +10,43 @@ public partial class RadioButton
         IItemsElement<RadioItem>,
         IItemsSourceElement,
         IICommandElement,
-        IVisualTreeElement
+        IVisualTreeElement,
+        IFontElement
 {
+    ViewState IElement.ViewState => ViewState.Normal;
+    public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
+    public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
+    public static readonly BindableProperty FontFamilyProperty = IFontElement.FontFamilyProperty;
+    public static readonly BindableProperty FontWeightProperty = IFontElement.FontWeightProperty;
+    public static readonly BindableProperty FontIsItalicProperty =
+        IFontElement.FontIsItalicProperty;
+
+    public Color FontColor
+    {
+        get => (Color)this.GetValue(FontColorProperty);
+        set => this.SetValue(FontColorProperty, value);
+    }
+    public float FontSize
+    {
+        get => (float)this.GetValue(FontSizeProperty);
+        set => this.SetValue(FontSizeProperty, value);
+    }
+    public string FontFamily
+    {
+        get => (string)this.GetValue(FontFamilyProperty);
+        set => this.SetValue(FontFamilyProperty, value);
+    }
+    public FontWeight FontWeight
+    {
+        get => (FontWeight)this.GetValue(FontWeightProperty);
+        set => this.SetValue(FontWeightProperty, value);
+    }
+    public bool FontIsItalic
+    {
+        get => (bool)this.GetValue(FontIsItalicProperty);
+        set => this.SetValue(FontIsItalicProperty, value);
+    }
+
     public static readonly BindableProperty ItemsProperty = IItemsElement<RadioItem>.ItemsProperty;
 
     public static readonly BindableProperty ItemsSourceProperty =
@@ -106,6 +141,11 @@ public partial class RadioButton
                     if (!this.Children.Contains(item))
                     {
                         var safeIndex = Math.Clamp(index, 0, this.Children.Count);
+                        item.FontColor = FontColor;
+                        item.FontSize = FontSize;
+                        item.FontFamily = FontFamily;
+                        item.FontIsItalic = FontIsItalic;
+                        item.FontWeight = FontWeight;
                         this.Children.Insert(safeIndex, item);
                     }
                     index++;

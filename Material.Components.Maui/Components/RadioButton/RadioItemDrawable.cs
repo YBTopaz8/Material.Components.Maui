@@ -9,7 +9,7 @@ internal class RadioItemDrawable(RadioItem view) : IDrawable
 
         var scale = rect.Height / 40f;
         this.DrawCircle(canvas, rect, scale);
-
+        
         canvas.DrawText(
             view,
             new RectF(50, 0, rect.Width - 50, rect.Height),

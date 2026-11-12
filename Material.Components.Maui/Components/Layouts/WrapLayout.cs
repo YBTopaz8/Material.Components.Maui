@@ -51,7 +51,7 @@ public partial class WrapLayout : Microsoft.Maui.Controls.Layout, IItemsLayout
     }
 
 
-    private void OnPropertyChanged()
+    public void OnPropertyChanged()
     {
         if (this.Handler != null)
             this.InvalidateMeasure();

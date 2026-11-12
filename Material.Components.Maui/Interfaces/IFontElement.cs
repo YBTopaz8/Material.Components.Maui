@@ -11,8 +11,10 @@ public interface IFontElement : IElement
         nameof(FontColor),
         typeof(Color),
         typeof(IFontElement),
-        propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
-    );
+        propertyChanged: (bo, ov, nv) =>
+        {
+            ((IElement)bo).OnPropertyChanged();
+        });
 
     public static readonly BindableProperty FontSizeProperty = BindableProperty.Create(
         nameof(FontSize),

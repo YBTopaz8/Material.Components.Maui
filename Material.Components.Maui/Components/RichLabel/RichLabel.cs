@@ -73,6 +73,8 @@ public partial class RichLabel
     public RichLabel()
     {
         this.SetDynamicResource(StyleProperty, "StandardRichLabelStyle");
+        this.StateLayerColor = Colors.Transparent;
+
         this.Drawable = new RichLabelDrawable(this);
         this.Inlines.CollectionChanged += OnInlinesCollectionChanged;
         this.Clicked += OnLabelClicked;

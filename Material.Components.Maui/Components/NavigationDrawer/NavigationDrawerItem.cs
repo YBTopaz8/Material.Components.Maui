@@ -1,7 +1,7 @@
 ﻿namespace Material.Components.Maui;
 
 [ContentProperty(nameof(Content))]
-public class NavigationDrawerItem
+public partial class NavigationDrawerItem
     : TouchGraphicsView,
         IContentElement,
         ITextElement,
@@ -49,7 +49,7 @@ public class NavigationDrawerItem
     public static readonly BindableProperty IsActivedProperty = BindableProperty.Create(
         nameof(IsActived),
         typeof(bool),
-        typeof(NavigationBarItem),
+        typeof(NavigationDrawerItem),
         propertyChanged: (bo, ov, nv) =>
         {
             var ndi = (NavigationDrawerItem)bo;
@@ -168,6 +168,9 @@ public class NavigationDrawerItem
 
     private void OnClicked(object? sender, TouchEventArgs e)
     {
+#if WINDOWS
+    if (!this.IsLeftClick) return;
+#endif
         var navDrawer = this.GetParentElement<NavigationDrawer>();
         navDrawer?.SelectedItem = this;
 

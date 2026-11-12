@@ -1,5 +1,4 @@
-﻿
-using Material.Components.Maui;
+﻿namespace Material.Components.Maui;
 
 internal partial class SegmentedButtonDrawable(SegmentedButton view) : IDrawable, IDisposable
 {
@@ -46,11 +45,7 @@ internal partial class SegmentedButtonDrawable(SegmentedButton view) : IDrawable
     {
         canvas.SaveState();
 
-#if ANDROID
-        canvas.Scale(canvas.DisplayScale, canvas.DisplayScale);
-#endif
-
-        // SINGLE CLIP OPERATION FOR THIS ITEM
+        // SINGLE CLIP FOR THIS SEGMENT
         this.ClipItemRect(canvas, rect, item);
 
         // 1. Background
@@ -74,37 +69,45 @@ internal partial class SegmentedButtonDrawable(SegmentedButton view) : IDrawable
             canvas.DrawStateLayer(item, rect, item.ViewState);
         }
 
-        // 3. Text & Icons
+        // 3. Text & Icons Setup
         var scale = rect.Height / 40f;
         var hasText = !string.IsNullOrEmpty(item.Text);
         var hasIcon = !string.IsNullOrEmpty(item.IconData);
         var showCheck = item.IsSelected && view.MultiSelectMode;
 
         var currentFontColor = (item.IsSelected && view.SelectedFontColor != null)
-            ? view.SelectedFontColor
-            : (item.FontColor ?? view.FontColor);
+            ? view.SelectedFontColor : (item.FontColor ?? view.FontColor);
 
-        canvas.FontColor = currentFontColor.WithAlpha(view.ViewState is ViewState.Disabled ? 0.38f : 1f);
+        if (currentFontColor is not null)
+            canvas.FontColor = currentFontColor.WithAlpha(view.ViewState is ViewState.Disabled ? 0.38f : 1f);
+
+        // Calculate Text Size Early for Centering Math
+        var actualFontSize = item.FontSize > 0 ? item.FontSize : view.FontSize;
+        float textW = hasText ? view.GetStringSize(item.Text).Width : 0;
 
         float contentLeft = rect.Left;
-        float contentWidth = rect.Width;
 
+        // 4. Layout Icon and Text precisely!
         if (showCheck || hasIcon)
         {
             var baseIconSize = 18f * scale;
             var activeIconSize = showCheck ? (baseIconSize * item.CheckAnimationPercent) : baseIconSize;
-
             var gap = 8f * scale * (showCheck ? item.CheckAnimationPercent : 1f);
 
-            var textW = hasText ? view.GetStringSize(item.Text).Width : 0;
+            // Calculate total width of the icon + gap + text to center the whole block
+            float totalBlockWidth = activeIconSize + (hasText ? gap + textW : 0);
+
+            // Find perfect starting X coordinate
+            float startX = rect.Left + (rect.Width / 2f) - (totalBlockWidth / 2f);
+
             var iconRect = new RectF(
-                rect.Left + (rect.Width / 2f) - (hasText ? (activeIconSize + gap + textW) / 2f : activeIconSize / 2f),
+                startX,
                 rect.Center.Y - activeIconSize / 2f,
                 activeIconSize,
                 activeIconSize
             );
 
-            if (showCheck)
+            if (showCheck && activeIconSize > 0)
             {
                 canvas.FillColor = currentFontColor;
                 using var path = this.markPath.AsScaledPath(activeIconSize / 24f);
@@ -116,30 +119,39 @@ internal partial class SegmentedButtonDrawable(SegmentedButton view) : IDrawable
                 canvas.DrawIcon(item, iconRect, 18, scale);
             }
 
+            // Text starts right after the icon + gap
             contentLeft = iconRect.Right + gap;
-            contentWidth = rect.Right - contentLeft - (8f * scale);
+        }
+        else
+        {
+            // No Icon. Just center the text perfectly!
+            contentLeft = rect.Left + (rect.Width / 2f) - (textW / 2f);
         }
 
+        // 5. Draw Text
         if (hasText)
         {
-            var actualFontSize = item.FontSize > 0 ? item.FontSize : view.FontSize;
             var safeTextHeight = actualFontSize + 2f;
-            var textRect = new RectF(contentLeft, rect.Center.Y - (safeTextHeight / 2f), contentWidth, safeTextHeight);
-            canvas.ClipRectangle(textRect);
 
-            var font = new Microsoft.Maui.Graphics.Font(item.FontFamily ?? view.FontFamily, (int)(item.FontWeight), item.FontIsItalic || view.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal);
+            // FAKE WIDTH 10,000 prevents wrapping. 
+            var textRect = new RectF(contentLeft, rect.Center.Y - (safeTextHeight / 2f), 10000, safeTextHeight);
+
+            var font = new Microsoft.Maui.Graphics.Font(
+                item.FontFamily ?? view.FontFamily,
+                (int)(item.FontWeight),
+                item.FontIsItalic || view.FontIsItalic ? FontStyleType.Italic : FontStyleType.Normal
+            );
+
             canvas.Font = font;
             canvas.FontSize = actualFontSize;
 
-            var align = (showCheck || hasIcon) ? HorizontalAlignment.Left : HorizontalAlignment.Center;
-            canvas.DrawString(item.Text, textRect, align, VerticalAlignment.Center);
+            // ALWAYS USE LEFT ALIGNMENT! (We already calculated the exact X coordinate in 'contentLeft')
+            canvas.DrawString(item.Text, textRect, HorizontalAlignment.Left, VerticalAlignment.Center);
         }
 
-        // Properly pop the clip layer off the Direct2D stack
         canvas.RestoreState();
     }
 
-    
     void ClipItemRect(ICanvas canvas, RectF rect, SegmentedItem item)
     {
         using var path = new PathF();

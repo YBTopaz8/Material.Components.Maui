@@ -1,4 +1,6 @@
-﻿namespace Material.Components.Maui;
+﻿using Microsoft.Maui.Handlers;
+
+namespace Material.Components.Maui;
 
 [ContentProperty(nameof(Content))]
 public partial class Popup : View, IVisualTreeElement, IDisposable
@@ -87,7 +89,16 @@ public partial class Popup : View, IVisualTreeElement, IDisposable
     private readonly TaskCompletionSource<object?> taskCompletionSource = new();
 
     private bool disposedValue;
+    public void Show(VisualElement? anchor = default)
+    {
+        this.PlatformShow(anchor);
+    }
 
+    public async Task<object?> ShowAsync(VisualElement? anchor = default)
+    {
+        this.PlatformShow(anchor);
+        return await this.taskCompletionSource.Task;
+    }
     public async Task<object?> ShowAtAsync(Page? anchor = default)
     {
         this.PlatformShow(anchor);
@@ -100,7 +111,15 @@ public partial class Popup : View, IVisualTreeElement, IDisposable
         if (this.Content != null)
             SetInheritedBindingContext(this.Content, this.BindingContext);
     }
-
+    internal static Page? FindParentPage(Element? element)
+    {
+        while (element != null)
+        {
+            if (element is Page page) return page;
+            element = element.Parent;
+        }
+        return null;
+    }
     public IReadOnlyList<IVisualTreeElement> GetVisualChildren() =>
         this.Content != null ? [this.Content] : Array.Empty<IVisualTreeElement>().ToList();
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 using Microsoft.Maui.Animations;
 
 namespace Material.Components.Maui;
@@ -45,6 +46,20 @@ public partial class ComboBox
     {
         get => (Color?)this.GetValue(MenuBackgroundColorProperty);
         set => this.SetValue(MenuBackgroundColorProperty, value);
+    }
+    
+    public static readonly BindableProperty MenuFontColorProperty = BindableProperty.Create(
+    nameof(MenuFontColor),
+    typeof(Color),
+    typeof(ComboBox),
+    default(Color),
+    propertyChanged: (bo, ov, nv) => ((IElement)bo).OnPropertyChanged()
+);
+
+    public Color? MenuFontColor
+    {
+        get => (Color?)this.GetValue(MenuFontColorProperty);
+        set => this.SetValue(MenuFontColorProperty, value);
     }
 
     public static readonly BindableProperty ShowDropDownArrowProperty = BindableProperty.Create(
@@ -94,7 +109,16 @@ public partial class ComboBox
             if (index >= 0 && index < comboBox.Items.Count)
             {
                 selectedMenuItem = comboBox.Items[index];
-                comboBox.SelectedItem = selectedMenuItem?.Value ?? selectedMenuItem;
+                if (selectedMenuItem is not null)
+                {
+                    System.Diagnostics.Debug.WriteLine(selectedMenuItem.FontColor.ToHex());
+                    selectedMenuItem.FontColor = comboBox.FontColor;
+
+                    System.Diagnostics.Debug.WriteLine(selectedMenuItem.FontColor.ToHex());
+                    comboBox.SelectedItem = selectedMenuItem?.Value ?? selectedMenuItem;
+
+
+                }                
             }
             else if (index == -1)
             {
@@ -104,7 +128,7 @@ public partial class ComboBox
             if (comboBox.Command?.CanExecute(comboBox.CommandParameter ?? index) is true)
                 comboBox.Command?.Execute(comboBox.CommandParameter ?? index);
 
-            comboBox.SelectedChanged?.Invoke(comboBox, new(selectedMenuItem, index));
+            comboBox.SelectedChanged?.Invoke(comboBox, new SelectedItemChangedEventArgs(selectedItem: selectedMenuItem, index));
             ((IElement)comboBox).OnPropertyChanged();
         }
     );
@@ -132,7 +156,7 @@ public partial class ComboBox
 
     public static readonly BindableProperty LabelTextProperty = ILabelTextElement.LabelTextProperty;
     public static readonly BindableProperty LabelFontColorProperty =
-        ILabelTextElement.LabelFontColorProperty;
+         ILabelTextElement.LabelFontColorProperty;
 
     public static readonly BindableProperty ActiveIndicatorHeightProperty =
         IActiveIndicatorElement.ActiveIndicatorHeightProperty;
@@ -174,6 +198,8 @@ public partial class ComboBox
             var index = e.NewStartingIndex;
             foreach (MenuItem item in e.NewItems)
             {
+
+                this.menu.MenuFontColor = this.MenuFontColor;
                 this.menu.Items.Insert(index, item);
                 index++;
             }
@@ -241,9 +267,10 @@ public partial class ComboBox
                         displayText = item.ToString() ?? string.Empty;
                     }
                 }
-
+                var menItem=  new MenuItem {  Text = displayText, Value = item };
+                
                 // Put the raw object (e.g. AudioDevice) in Value!
-                this.Items.Insert(index, new MenuItem { Text = displayText, Value = item });
+                this.Items.Insert(index, menItem);
                 index++;
             }
         }
@@ -304,9 +331,9 @@ public partial class ComboBox
         get => (string)this.GetValue(LabelTextProperty);
         set => this.SetValue(LabelTextProperty, value);
     }
-    public Color LabelFontColor
+    public Color? LabelFontColor
     {
-        get => (Color)this.GetValue(LabelFontColorProperty);
+        get => (Color?)this.GetValue(LabelFontColorProperty);
         set => this.SetValue(LabelFontColorProperty, value);
     }
 
@@ -375,8 +402,8 @@ public partial class ComboBox
 
         this.UpdateMenuWidth();
 
-       
 
+       
 
         this.StartLabelTextAnimation();
         this.menu.Show(this);
@@ -389,9 +416,21 @@ public partial class ComboBox
     {
         this.IsDropDown = false;
         this.StartLabelTextAnimation();
-        if (e is int index)
-            this.SelectedIndex = index;
-        
+        if (e is not null)
+        {
+            Debug.WriteLine(e.GetType());
+
+            if (e is int index)
+            { 
+                this.SelectedIndex = index; 
+            }
+
+            else if (e.GetType() == typeof(MenuItem))
+            {
+                var menItem = e as MenuItem;
+                this.SelectedIndex = this.Items.IndexOf(menItem);
+            }
+        }
         this.DropDownClosed?.Invoke(this, EventArgs.Empty);
     }
 

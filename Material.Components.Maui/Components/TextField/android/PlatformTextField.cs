@@ -12,10 +12,10 @@ using RectF = Microsoft.Maui.Graphics.RectF;
 
 namespace Material.Components.Maui.Platform;
 
-public class PlatformTextField : TextView
+// CRITICAL FIX: Inherit from EditText, not TextView, to guarantee Android keyboard focus!
+public class PlatformTextField : EditText
 {
     public new event EventHandler<EditTextChangedEventArgs>? TextChanged;
-
     public event EventHandler<SelectionChangedArgs>? SelectionChanged;
 
     private readonly IKeyListener? editableKeyListener;
@@ -31,26 +31,18 @@ public class PlatformTextField : TextView
         this.Focusable = true;
         this.FocusableInTouchMode = true;
         this.SetTextIsSelectable(true);
-        this.SetCursorVisible(false);
-
+        this.SetCursorVisible(false); // We draw our own Material caret
+        
         this.editableKeyListener = this.KeyListener;
     }
 
     public void UpdateDrawable(IDrawable drawable) => this.drawable = drawable;
-
     public void UpdateText(string? text) => this.Text = text;
-
     public void UpdateFontSize(float size) => this.SetTextSize(Android.Util.ComplexUnitType.Dip, size);
-
     public void UpdateTypeface(Typeface typeface) => this.Typeface = typeface;
-
     public void UpdateSelection(int index) => Selection.SetSelection(this.EditableText, index);
-
-    public void UpdateSelection(int start, int end) =>
-        Selection.SetSelection(this.EditableText, start, end);
-
-    public void UpdateTextAlignment(Android.Views.TextAlignment alignment) =>
-        this.TextAlignment = alignment;
+    public void UpdateSelection(int start, int end) => Selection.SetSelection(this.EditableText, start, end);
+    public void UpdateTextAlignment(Android.Views.TextAlignment alignment) => this.TextAlignment = alignment;
 
     public void UpdatePadding(Thickness padding)
     {
@@ -60,46 +52,107 @@ public class PlatformTextField : TextView
         var bottom = padding.Bottom * this.scale;
         this.SetPadding((int)left, (int)top, (int)right, (int)bottom);
     }
-
     public void UpdateInputType(Primitives.InputType type)
     {
+        if (type == Primitives.InputType.None)
+        {
+            this.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextFlagMultiLine;
+            this.SetSingleLine(false);
+            this.ImeOptions = ImeAction.None;
+            this.TransformationMethod = null;
+            this.KeyListener = this.editableKeyListener;
+        }
+        else
+        {
+            this.SetSingleLine(true);
+            this.ImeOptions = ImeAction.Next | ImeAction.Done;
 
-        this.SetSingleLine(type is not Primitives.InputType.None);
-        this.ImeOptions = type is not Primitives.InputType.None ? ImeAction.Next : ImeAction.None;
+            switch (type)
+            {
+                case Primitives.InputType.Numeric:
+                    this.InputType = Android.Text.InputTypes.ClassNumber;
+                    this.TransformationMethod = null;
+                    // OS-level block: Only allow digits 0-9
+                    this.KeyListener = Android.Text.Method.DigitsKeyListener.GetInstance("0123456789");
+                    break;
 
-        this.TransformationMethod =
-            type is Primitives.InputType.Password
-                ? PasswordTransformationMethod.Instance
-                : (ITransformationMethod?)null;
+                case Primitives.InputType.DecimalNumber:
+                    this.InputType = Android.Text.InputTypes.ClassNumber | Android.Text.InputTypes.NumberFlagDecimal;
+                    this.TransformationMethod = null;
+                    // OS-level block: Only allow digits, dots, and commas (prevents letters entirely!)
+                    this.KeyListener = Android.Text.Method.DigitsKeyListener.GetInstance("0123456789.,");
+                    break;
+
+                case Primitives.InputType.Password:
+                    this.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextVariationPassword;
+                    this.TransformationMethod = PasswordTransformationMethod.Instance;
+                    this.KeyListener = this.editableKeyListener;
+                    break;
+
+                default:
+                    this.InputType = Android.Text.InputTypes.ClassText;
+                    this.TransformationMethod = null;
+                    this.KeyListener = this.editableKeyListener;
+                    break;
+            }
+        }
     }
 
+
+    //public void UpdateInputType(Primitives.InputType type)
+    //{
+    //    if (type == Primitives.InputType.None)
+    //    {
+    //        this.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextFlagMultiLine;
+    //        this.SetSingleLine(false);
+    //        this.ImeOptions = ImeAction.None;
+    //        this.TransformationMethod = null;
+    //    }
+    //    else
+    //    {
+    //        this.SetSingleLine(true);
+    //        this.ImeOptions = ImeAction.Next | ImeAction.Done;
+
+    //        switch (type)
+    //        {
+    //            case Primitives.InputType.Numeric:
+    //                this.InputType = Android.Text.InputTypes.ClassNumber;
+    //                this.TransformationMethod = null;
+    //                break;
+
+    //            case Primitives.InputType.DecimalNumber:
+    //                this.InputType = Android.Text.InputTypes.ClassNumber | Android.Text.InputTypes.NumberFlagDecimal;
+    //                this.TransformationMethod = null;
+    //                break;
+
+    //            case Primitives.InputType.Password:
+    //                this.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextVariationPassword;
+    //                this.TransformationMethod = PasswordTransformationMethod.Instance;
+    //                break;
+
+    //            default:
+    //                this.InputType = Android.Text.InputTypes.ClassText;
+    //                this.TransformationMethod = null;
+    //                break;
+    //        }
+    //    }
+    //}
+  
+    
     public void UpdateIsReadOnly(bool isReadOnly)
     {
         this.KeyListener = isReadOnly ? null : this.editableKeyListener;
     }
 
     protected override bool DefaultEditable => true;
-    public override bool FreezesText
-    {
-        get => true;
-        set => base.FreezesText = value;
-    }
+    public override bool FreezesText { get => true; set => base.FreezesText = value; }
 
-    protected override IMovementMethod? DefaultMovementMethod => ArrowKeyMovementMethod.Instance;
-
-    public override int SelectionStart => Selection.GetSelectionStart(this.EditableText);
-
-    public override int SelectionEnd => Selection.GetSelectionEnd(this.EditableText);
-
-    protected override void OnTextChanged(
-        Java.Lang.ICharSequence? text,
-        int start,
-        int lengthBefore,
-        int lengthAfter
-    )
+    protected override void OnTextChanged(Java.Lang.ICharSequence? text, int start, int lengthBefore, int lengthAfter)
     {
         base.OnTextChanged(text, start, lengthBefore, lengthAfter);
-        this.TextChanged?.Invoke(this, new EditTextChangedEventArgs(this.Text, new(this.SelectionStart, this.SelectionEnd)));
+        int startSel = base.SelectionStart;
+        int endSel = base.SelectionEnd;
+        this.TextChanged?.Invoke(this, new EditTextChangedEventArgs(this.Text, new(startSel, endSel)));
     }
 
     protected override void OnSelectionChanged(int selStart, int selEnd)
@@ -109,9 +162,7 @@ public class PlatformTextField : TextView
     }
 
     public override bool OnCheckIsTextEditor() => true;
-
-    public override void SetText(Java.Lang.ICharSequence? text, BufferType? type) =>
-        base.SetText(text, BufferType.Editable);
+    public override void SetText(Java.Lang.ICharSequence? text, BufferType? type) => base.SetText(text, BufferType.Editable);
 
     //------------------------------------------------------------------------------------------------//
 
@@ -141,8 +192,7 @@ public class PlatformTextField : TextView
 
     public override void Draw(Canvas androidCanvas)
     {
-        if (this.drawable == null)
-            return;
+        if (this.drawable == null) return;
 
         var dirtyRect = new RectF(0, 0, this.width, this.height);
 
@@ -156,9 +206,10 @@ public class PlatformTextField : TextView
 
         this.scalingCanvas.ResetState();
         this.scalingCanvas.Scale(this.scale, this.scale);
-        //Since we are using a scaling canvas, we need to scale the rectangle
+
         dirtyRect.Height /= this.scale;
         dirtyRect.Width /= this.scale;
+
         this.drawable.Draw(this.scalingCanvas, dirtyRect);
         this.canvas.Canvas = null;
     }
@@ -183,9 +234,12 @@ public class PlatformTextField : TextView
 
     public override bool OnTouchEvent(MotionEvent? e)
     {
-        base.OnTouchEvent(e);
-        if(e is null)
-            return false;   
+        bool handled = base.OnTouchEvent(e);
+
+        if (e is null) return handled;
+
+
+
         var touchCount = e.PointerCount;
         var touchPoints = new PointF[touchCount];
         for (var i = 0; i < touchCount; i++)
@@ -204,7 +258,14 @@ public class PlatformTextField : TextView
                 break;
             case MotionEventActions.Up:
             case MotionEventActions.PointerUp:
+                //this.TouchesBegan(touchPoints);
                 this.TouchesEnded(touchPoints);
+                if (!this.dragStarted)
+                {
+                    this.RequestFocus();
+                    var imm = (InputMethodManager?)this.Context?.GetSystemService(Context.InputMethodService);
+                    imm?.ShowSoftInput(this, ShowFlags.Implicit);
+                }
                 break;
             case MotionEventActions.Cancel:
                 this.TouchesCanceled();
@@ -216,23 +277,37 @@ public class PlatformTextField : TextView
 
     public void TouchesBegan(PointF[] points)
     {
+        if (points == null || points.Length == 0) return;
+
         this.dragStarted = false;
         this.lastMovedViewPoints = points;
         this.graphicsView?.StartInteraction(points);
         this.pressedContained = true;
+        if (!this.HasFocus)
+        {
+
+            this.RequestFocus();
+        }
     }
 
     public void TouchesMoved(PointF[] points)
     {
+        if (points == null || points.Length == 0) return;
+
         if (!this.dragStarted)
         {
-            if (points.Length == 1)
+            if (this.lastMovedViewPoints != null && this.lastMovedViewPoints.Length > 0 && points.Length == 1)
             {
                 var deltaX = this.lastMovedViewPoints[0].X - points[0].X;
                 var deltaY = this.lastMovedViewPoints[0].Y - points[0].Y;
 
                 if (Math.Abs(deltaX) <= 3 && Math.Abs(deltaY) <= 3)
                     return;
+            }
+            else
+            {
+                this.lastMovedViewPoints = points;
+                return;
             }
         }
 
@@ -245,18 +320,24 @@ public class PlatformTextField : TextView
     public void TouchesEnded(PointF[] points)
     {
         this.graphicsView?.EndInteraction(points, this.pressedContained);
+
+        this.dragStarted = false;
+        this.lastMovedViewPoints = [];
+       
     }
 
     public void TouchesCanceled()
     {
         this.pressedContained = false;
+        this.dragStarted = false;
+        this.lastMovedViewPoints = [];
         this.graphicsView?.CancelInteraction();
     }
 
     public override bool OnHoverEvent(MotionEvent? e)
     {
         base.OnHoverEvent(e);
-        ArgumentNullException.ThrowIfNull(e);
+        if (e is null) return false;
 
         var touchCount = e.PointerCount;
         var touchPoints = new PointF[touchCount];
@@ -282,7 +363,5 @@ public class PlatformTextField : TextView
     }
 
     public void Connect(IGraphicsView graphicsView) => this.graphicsView = graphicsView;
-
     public void Disconnect() => this.graphicsView = null;
-
 }
