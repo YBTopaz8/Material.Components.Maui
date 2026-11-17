@@ -18,6 +18,13 @@ public partial class Switch
         IStyleElement,
         IDisposable
 {
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
+
     protected new bool IsVisualStateChanging { get; set; }
     ViewState viewState = ViewState.Normal;
 

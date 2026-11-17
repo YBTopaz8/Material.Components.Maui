@@ -18,6 +18,13 @@ public class TextField
         IBackgroundElement,
         IDisposable
 {
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
+
     protected override void ChangeVisualState()
     {
         this.IsVisualStateChanging = true;

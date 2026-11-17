@@ -35,6 +35,13 @@ public partial class Chip
 
         this.Invalidate();
     }
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
+
     public static readonly BindableProperty CornerRadiusProperty = IOutlineElement.CornerRadiusProperty;
     public CornerRadius CornerRadius
     {

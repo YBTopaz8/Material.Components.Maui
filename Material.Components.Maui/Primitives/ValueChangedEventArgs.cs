@@ -1,4 +1,9 @@
-﻿namespace Material.Components.Maui.Primitives;
+﻿using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+
+namespace Material.Components.Maui.Primitives;
 
 public class ValueChangedEventArgs<T> : EventArgs
 {

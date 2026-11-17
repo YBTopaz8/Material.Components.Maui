@@ -12,6 +12,13 @@ public partial class SegmentedItem
         IVisualTreeElement,
         IDisposable
 {
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
+
     public object? Value { get; set; }
     protected bool IsVisualStateChanging { get; set; }
     ViewState viewState = ViewState.Normal;

@@ -38,7 +38,7 @@ public partial class Slider : TouchGraphicsView, IElement, IBackgroundElement
     public uint AnimationDuration { get => (uint)GetValue(AnimationDurationProperty); set => SetValue(AnimationDurationProperty, value); }
 
     internal double DrawValue { get; private set; }
-    private IAnimationManager? animationManager;
+    private new IAnimationManager? animationManager;
     // ==========================================
     // VISUAL PROPERTIES
     // ==========================================

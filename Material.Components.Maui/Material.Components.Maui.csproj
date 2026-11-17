@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net10.0-android;</TargetFrameworks>
+		<TargetFrameworks>net10.0-android</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net10.0-tizen</TargetFrameworks> -->
@@ -44,12 +44,13 @@
 		<None Include="**\net\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 	</ItemGroup>
 
-
-	<ItemGroup>
+	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
 		<PackageReference Include="WinUI.TableView" Version="1.5.1" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.120" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.120" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\MaterialColorUtilities\MaterialColorUtilities\MaterialColorUtilities.csproj" />

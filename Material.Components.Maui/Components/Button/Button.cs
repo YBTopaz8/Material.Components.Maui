@@ -39,6 +39,12 @@ public class Button
         get => (CornerRadius)GetValue(CornerRadiusProperty);
         set => SetValue(CornerRadiusProperty, value);
     }
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
     public static readonly BindableProperty TextProperty = ITextElement.TextProperty;
     public static readonly BindableProperty FontColorProperty = IFontElement.FontColorProperty;
     public static readonly BindableProperty FontSizeProperty = IFontElement.FontSizeProperty;
@@ -61,6 +67,9 @@ public class Button
         get => (string)this.GetValue(TextProperty);
         set => this.SetValue(TextProperty, value);
     }
+
+   
+
     public Color FontColor
     {
         get => (Color)this.GetValue(FontColorProperty);

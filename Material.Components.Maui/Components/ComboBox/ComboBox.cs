@@ -111,10 +111,8 @@ public partial class ComboBox
                 selectedMenuItem = comboBox.Items[index];
                 if (selectedMenuItem is not null)
                 {
-                    System.Diagnostics.Debug.WriteLine(selectedMenuItem.FontColor.ToHex());
                     selectedMenuItem.FontColor = comboBox.FontColor;
 
-                    System.Diagnostics.Debug.WriteLine(selectedMenuItem.FontColor.ToHex());
                     comboBox.SelectedItem = selectedMenuItem?.Value ?? selectedMenuItem;
 
 
@@ -392,6 +390,12 @@ public partial class ComboBox
 
     protected void OnClicked(object? sender, TouchEventArgs e)
     {
+        if (Items.Count <1)
+        {
+            this.OutlineColor = Colors.Red;
+            return;
+        }
+
         this.IsDropDown = true;
         this.menu.Placement = this.Placement;
 
@@ -418,7 +422,7 @@ public partial class ComboBox
         this.StartLabelTextAnimation();
         if (e is not null)
         {
-            Debug.WriteLine(e.GetType());
+
 
             if (e is int index)
             { 

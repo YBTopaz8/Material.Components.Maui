@@ -51,6 +51,12 @@ public class IconButton
 
         this.Invalidate();
     }
+    public ImageSource IconSource
+    {
+        get => (ImageSource)this.GetValue(IconSourceProperty);
+        set => this.SetValue(IconSourceProperty, value);
+    }
+    public static readonly BindableProperty IconSourceProperty = IIconElement.IconSourceProperty;
 
     public static readonly BindableProperty IconDataProperty = IIconElement.IconDataProperty;
     public static readonly BindableProperty IconColorProperty = IIconElement.IconColorProperty;
