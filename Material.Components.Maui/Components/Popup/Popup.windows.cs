@@ -19,7 +19,7 @@ public partial class Popup
     private ContentPanel? platformAnchor;
     private FrameworkElement? platformOutside;
 
-    public void PlatformShow(VisualElement? anchor)
+    internal void PlatformShow(VisualElement? anchor)
     {
         var page = anchor as Page ?? FindParentPage(anchor) ?? MauiApplication.Current?.Windows.FirstOrDefault()?.Page;
         var context = anchor?.Handler?.MauiContext ?? page?.Handler?.MauiContext ?? MauiApplication.Current?.Handler?.MauiContext;

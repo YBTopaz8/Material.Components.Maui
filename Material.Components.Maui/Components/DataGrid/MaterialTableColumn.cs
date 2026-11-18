@@ -7,6 +7,10 @@ namespace Material.Components.Maui;
 
 public partial class MaterialTableColumn : BindableObject
 {
+    public event EventHandler<MaterialTableCellValueChangedEventArgs>? ValueChanged;
+
+    internal void RaiseValueChanged(MaterialTableCellValueChangedEventArgs args)
+        => ValueChanged?.Invoke(this, args);
     public static readonly BindableProperty HeaderProperty =
         BindableProperty.Create(nameof(Header), typeof(string), typeof(MaterialTableColumn), string.Empty);
 

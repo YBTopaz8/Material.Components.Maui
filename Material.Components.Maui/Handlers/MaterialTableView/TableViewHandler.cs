@@ -24,6 +24,7 @@ public partial class TableViewHandler : IViewHandler
             [nameof(MaterialTableView.MaxColumnWidth)] = MapMaxColumnWidth,
             [nameof(VisualElement.BackgroundColor)] = MapAppearance,
             [nameof(IView.Background)] = MapAppearance,
+            [nameof(MaterialTableView.EmptyText)] = MapEmptyText,
             // MD3 Theme & Layout
             [nameof(MaterialTableView.Density)] = MapAppearance,
             [nameof(MaterialTableView.GridLinesMode)] = MapAppearance,
@@ -38,6 +39,8 @@ public partial class TableViewHandler : IViewHandler
             [nameof(MaterialTableView.OutlineColor)] = MapAppearance,
             [nameof(MaterialTableView.FontSize)] = MapAppearance,
             [nameof(MaterialTableView.FontFamily)] = MapAppearance,
+            [nameof(MaterialTableView.AllowUserToAddRows)] = MapAllowUserToAddRows,
+            [nameof(MaterialTableView.AllowUserToDeleteRows)] = MapAllowUserToDeleteRows,
         };
 
     public static CommandMapper<MaterialTableView, TableViewHandler> CommandMapper { get; set; } =
@@ -47,6 +50,8 @@ public partial class TableViewHandler : IViewHandler
             [nameof(MaterialTableView.DeselectAll)] = MapDeselectAll,
             [nameof(MaterialTableView.ScrollToItem)] = MapScrollToItem,
             [nameof(MaterialTableView.GetCsvContent)] = MapGetCsvContent,
+            [nameof(MaterialTableView.ClearFilters)] = MapClearFilters,
+            [nameof(MaterialTableView.ClearSorting)] = MapClearSorting,
         };
 
     public TableViewHandler() : base(Mapper, CommandMapper) { }
@@ -71,9 +76,13 @@ public partial class TableViewHandler : IViewHandler
     static partial void MapMinColumnWidth(TableViewHandler handler, MaterialTableView virtualView);
     static partial void MapMaxColumnWidth(TableViewHandler handler, MaterialTableView virtualView);
     static partial void MapAppearance(TableViewHandler handler, MaterialTableView virtualView);
-
+    static partial void MapAllowUserToAddRows(TableViewHandler handler, MaterialTableView virtualView);
+    static partial void MapAllowUserToDeleteRows(TableViewHandler handler, MaterialTableView virtualView);
     static partial void MapSelectAll(TableViewHandler handler, MaterialTableView virtualView, object? args);
     static partial void MapDeselectAll(TableViewHandler handler, MaterialTableView virtualView, object? args);
     static partial void MapScrollToItem(TableViewHandler handler, MaterialTableView virtualView, object? args);
     static partial void MapGetCsvContent(TableViewHandler handler, MaterialTableView virtualView, object? args);
+    static partial void MapEmptyText(TableViewHandler handler, MaterialTableView virtualView);
+    static partial void MapClearFilters(TableViewHandler handler, MaterialTableView virtualView, object? args);
+    static partial void MapClearSorting(TableViewHandler handler, MaterialTableView virtualView, object? args);
 }

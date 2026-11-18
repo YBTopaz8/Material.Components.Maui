@@ -83,8 +83,8 @@ public partial class Popup : View, IVisualTreeElement, IDisposable
         set => this.SetValue(OffsetYProperty, value);
     }
 
-    public EventHandler? Opened;
-    public EventHandler<object?>? Closed;
+    public event EventHandler? Opened;
+    public event EventHandler<object?>? Closed;
 
     private readonly TaskCompletionSource<object?> taskCompletionSource = new();
 

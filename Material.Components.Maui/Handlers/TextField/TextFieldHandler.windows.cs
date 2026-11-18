@@ -59,12 +59,19 @@ public partial class TextFieldHandler : ViewHandler<TextField, PlatformTextField
 
     public static void MapInvalidate(TextFieldHandler handler, TextField virtualView, object? arg)
     {
-        if (handler.PlatformView is null)
+        try
         {
-            return;
+            if (handler.PlatformView is null)
+            {
+                return;
+            }
+
+            handler.PlatformView.Invalidate();
         }
-        
-        handler.PlatformView.Invalidate();
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
     }
 
     static partial void MapText(TextFieldHandler handler, TextField virtualView)

@@ -1,16 +1,30 @@
-﻿using System.Collections;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using Material.Components.Maui.Platform;
+﻿using Material.Components.Maui.Platform;
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System.Collections;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Reflection;
+using WinTableViewBeginningEditEventArgs = WinUI.TableView.TableViewBeginningEditEventArgs;
+using WinTableViewCellEditEndedEventArgs = WinUI.TableView.TableViewCellEditEndedEventArgs;
+using WinTableViewEditAction = WinUI.TableView.TableViewEditAction;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
+using Microsoft.UI.Dispatching;
+using WinCheckBox = Microsoft.UI.Xaml.Controls.CheckBox;
+using WinToggleSwitch = Microsoft.UI.Xaml.Controls.ToggleSwitch;
+using Windows.System;
 using FontWeights = Microsoft.UI.Text.FontWeights;
 using GridUnitType = Microsoft.Maui.GridUnitType;
 using ListViewSelectionMode = Microsoft.UI.Xaml.Controls.ListViewSelectionMode;
-using WinTableViewCell = WinUI.TableView.TableViewCell;
+using MauiApplication = Microsoft.Maui.Controls.Application;
+using PropertyChangingEventArgs = System.ComponentModel.PropertyChangingEventArgs;
+using SolidColorBrush = Microsoft.Maui.Controls.SolidColorBrush;
 using TextAlignment = Microsoft.Maui.TextAlignment;
 using VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment;
 using WinBinding = Microsoft.UI.Xaml.Data.Binding;
@@ -28,6 +42,7 @@ using WinSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 using WinStyle = Microsoft.UI.Xaml.Style;
 using WinTableView = WinUI.TableView.TableView;
 using WinTableViewBoundColumn = WinUI.TableView.TableViewBoundColumn;
+using WinTableViewCell = WinUI.TableView.TableViewCell;
 using WinTableViewCheckBoxColumn = WinUI.TableView.TableViewCheckBoxColumn;
 using WinTableViewColumn = WinUI.TableView.TableViewColumn;
 using WinTableViewColumnHeader = WinUI.TableView.TableViewColumnHeader;
@@ -46,51 +61,133 @@ using WinTextBox = Microsoft.UI.Xaml.Controls.TextBox;
 using WinThickness = Microsoft.UI.Xaml.Thickness;
 using WinUpdateSourceTrigger = Microsoft.UI.Xaml.Data.UpdateSourceTrigger;
 using WinVisibility = Microsoft.UI.Xaml.Visibility;
-using MauiApplication = Microsoft.Maui.Controls.Application;
-using SolidColorBrush = Microsoft.Maui.Controls.SolidColorBrush;
 namespace Material.Components.Maui.Handlers;
 
 public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformTableView>
 {
+    private readonly Dictionary<Type, Dictionary<string, PropertyInfo>> _propertyCache = new();
     private readonly Dictionary<MaterialTableColumn, WinTableViewColumn> _columnMap = new();
+    private readonly Dictionary<WinTableViewColumn, MaterialTableColumn> _winColumnMap = new();
+
+    private (object? Item, WinTableViewColumn? Column, object? OldValue) _activeEdit;
+    private bool _isConnecting;
+
+    private INotifyCollectionChanged? _subscribedItemsSource;
+    private ObservableCollection<object>? _proxyItems;
+    private object? _draftItem;
+    private bool _isSyncingProxy;
     private INotifyCollectionChanged? _subscribedColumns;
     private bool _isUpdatingSelection;
 
     private WinTableView Table => PlatformView.TableView;
 
     protected override PlatformTableView CreatePlatformView() => new();
+    static partial void MapClearFilters(TableViewHandler handler, MaterialTableView virtualView, object? args)
+    => handler.Table.FilterDescriptions.Clear();
 
+    static partial void MapClearSorting(TableViewHandler handler, MaterialTableView virtualView, object? args)
+        => handler.Table.SortDescriptions.Clear();
+
+    static partial void MapEmptyText(TableViewHandler handler, MaterialTableView virtualView)
+        => handler.UpdateEmptyOverlay();
+
+    private void OnTableItemsVectorChanged(IObservableVector<object> sender, IVectorChangedEventArgs args)
+        => UpdateEmptyOverlay();
+
+    private void UpdateEmptyOverlay()
+    {
+        if (VirtualView is null || string.IsNullOrWhiteSpace(VirtualView.EmptyText))
+        {
+            PlatformView.EmptyOverlay.Visibility = WinVisibility.Collapsed;
+            return;
+        }
+
+        PlatformView.EmptyOverlay.Text = VirtualView.EmptyText;
+        PlatformView.EmptyOverlay.Visibility = Table.Items.Count == 0
+            ? WinVisibility.Visible
+            : WinVisibility.Collapsed;
+    }
     protected override void ConnectHandler(PlatformTableView platformView)
     {
         base.ConnectHandler(platformView);
         platformView.TableView.SelectionChanged += OnPlatformSelectionChanged;
+        platformView.TableView.PreviewKeyDown += OnTablePreviewKeyDown;
+
+        platformView.TableView.BeginningEdit += OnTableBeginningEdit;
+        platformView.TableView.CellEditEnded += OnTableCellEditEnded;
+        platformView.TableView.Items.VectorChanged += OnTableItemsVectorChanged;
+        
 
         if (MauiApplication.Current is not null)
-            MauiApplication.Current.RequestedThemeChanged += Current_RequestedThemeChanged; ;
+            MauiApplication.Current.RequestedThemeChanged += Current_RequestedThemeChanged;
 
         VirtualView?.RaiseNativeViewReady(platformView.TableView);
     }
 
+    protected override void DisconnectHandler(PlatformTableView platformView)
+    {
+        platformView.TableView.SelectionChanged -= OnPlatformSelectionChanged;
+        platformView.TableView.PreviewKeyDown -= OnTablePreviewKeyDown;
+        platformView.TableView.BeginningEdit -= OnTableBeginningEdit;
+        platformView.TableView.CellEditEnded -= OnTableCellEditEnded;
+
+        if (MauiApplication.Current is not null)
+            MauiApplication.Current.RequestedThemeChanged -= Current_RequestedThemeChanged;
+
+        platformView.TableView.Items.VectorChanged -= OnTableItemsVectorChanged;
+        UnsubscribeItemsSource();
+        
+        UnsubscribeColumns();
+        UntrackColumns();
+        base.DisconnectHandler(platformView);
+    }
     private void Current_RequestedThemeChanged(object? sender, AppThemeChangedEventArgs e)
     {
         
         if (VirtualView is not null)
             ApplyMaterialDesign3Theme(this, VirtualView);
     }
-
-    protected override void DisconnectHandler(PlatformTableView platformView)
+    private void OnTableBeginningEdit(object? sender, WinTableViewBeginningEditEventArgs e)
     {
-        platformView.TableView.SelectionChanged -= OnPlatformSelectionChanged;
+        _activeEdit = default;
 
-        if (MauiApplication.Current is not null)
-            MauiApplication.Current.RequestedThemeChanged -= Current_RequestedThemeChanged;
+        if (e.DataItem is null || e.Column is null)
+            return;
 
-        UnsubscribeColumns();
-        UntrackColumns();
-        base.DisconnectHandler(platformView);
+        if (!_winColumnMap.TryGetValue(e.Column, out var col) || string.IsNullOrWhiteSpace(col.BindingPath))
+            return;
+
+        TryGetPropertyValue(e.DataItem, col.BindingPath, out var oldValue);
+        _activeEdit = (e.DataItem, e.Column, oldValue);
     }
 
-    
+    private void OnTableCellEditEnded(object? sender, WinTableViewCellEditEndedEventArgs e)
+    {
+        var pending = _activeEdit;
+        _activeEdit = default;
+
+        if (VirtualView is null || e.EditAction != WinTableViewEditAction.Commit || e.DataItem is null || e.Column is null)
+            return;
+
+        if (!_winColumnMap.TryGetValue(e.Column, out var col) || string.IsNullOrWhiteSpace(col.BindingPath))
+            return;
+
+        if (!TryGetPropertyValue(e.DataItem, col.BindingPath, out var newValue))
+            return;
+
+        object? oldValue = ReferenceEquals(pending.Item, e.DataItem) && ReferenceEquals(pending.Column, e.Column)
+            ? pending.OldValue
+            : null;
+
+        if (Equals(oldValue, newValue))
+            return;
+
+        bool isNewRow = ReferenceEquals(e.DataItem, _draftItem);
+        if (isNewRow)
+            PromoteDraftRow(e.DataItem);
+
+        VirtualView.RaiseCellValueChanged(e.DataItem, col, col.BindingPath, oldValue, newValue, isNewRow);
+    }
 
     private void OnPlatformSelectionChanged(object sender, WinSelectionChangedEventArgs e)
     {
@@ -101,18 +198,22 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
         {
             _isUpdatingSelection = true;
 
-            if (!Equals(VirtualView.SelectedItem, Table.SelectedItem))
-                VirtualView.SelectedItem = Table.SelectedItem;
+            var selected = ReferenceEquals(Table.SelectedItem, _draftItem) ? null : Table.SelectedItem;
+            if (!Equals(VirtualView.SelectedItem, selected))
+                VirtualView.SelectedItem = selected;
 
             if (VirtualView.SelectedItems is IList boundList)
             {
                 boundList.Clear();
                 foreach (var item in Table.SelectedItems)
-                    boundList.Add(item);
+                {
+                    if (!ReferenceEquals(item, _draftItem))
+                        boundList.Add(item);
+                }
             }
 
-            var added = e.AddedItems?.Cast<object>().ToList() ?? [];
-            var removed = e.RemovedItems?.Cast<object>().ToList() ?? [];
+            var added = e.AddedItems?.Where(x => !ReferenceEquals(x, _draftItem)).ToList() ?? [];
+            var removed = e.RemovedItems?.Where(x => !ReferenceEquals(x, _draftItem)).ToList() ?? [];
             VirtualView.RaiseSelectionChanged(added, removed);
         }
         finally
@@ -149,6 +250,24 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
         foreach (var col in _columnMap.Keys)
             col.PropertyChanged -= OnColumnPropertyChanged;
         _columnMap.Clear();
+        _winColumnMap.Clear();
+    }
+
+    private void RebuildColumns(IList<MaterialTableColumn>? columns)
+    {
+        UntrackColumns();
+        Table.Columns.Clear();
+        if (columns is null || VirtualView is null)
+            return;
+
+        foreach (var col in columns)
+        {
+            var winCol = CreateWinColumn(VirtualView, col);
+            _columnMap[col] = winCol;
+            _winColumnMap[winCol] = col;
+            col.PropertyChanged += OnColumnPropertyChanged;
+            Table.Columns.Add(winCol);
+        }
     }
 
     private void OnColumnsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -182,25 +301,18 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
             case nameof(MaterialTableColumn.ItemsSource) when winCol is WinTableViewComboBoxColumn combo:
                 combo.ItemsSource = col.ItemsSource;
                 break;
+            case nameof(MaterialTableColumn.TextColor):
+            case nameof(MaterialTableColumn.FontSize):
+            case nameof(MaterialTableColumn.FontFamily):
+            case nameof(MaterialTableColumn.FontAttributes):
+            case nameof(MaterialTableColumn.FontWeight):
+                if (VirtualView is not null)
+                    RebuildColumns(VirtualView.Columns);
+                break;
         }
     }
 
-    private void RebuildColumns(IList<MaterialTableColumn>? columns)
-    {
-        UntrackColumns();
-        Table.Columns.Clear();
-        if (columns is null || VirtualView is null)
-            return;
-
-        foreach (var col in columns)
-        {
-            var winCol = CreateWinColumn(VirtualView, col);
-            _columnMap[col] = winCol;
-            col.PropertyChanged += OnColumnPropertyChanged;
-            Table.Columns.Add(winCol);
-        }
-    }
-
+   
     private static WinTableViewColumn CreateWinColumn(MaterialTableView table, MaterialTableColumn col)
     {
         bool usesMaskOrFormat = !string.IsNullOrEmpty(col.DisplayFormat) || !string.IsNullOrEmpty(col.InputMask);
@@ -235,7 +347,9 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
             {
                 Path = new PropertyPath(col.BindingPath),
                 Mode = col.IsReadOnly ? WinBindingMode.OneWay : WinBindingMode.TwoWay,
-                UpdateSourceTrigger = WinUpdateSourceTrigger.PropertyChanged
+                UpdateSourceTrigger = col.ColumnType is MaterialTableColumnType.Text or MaterialTableColumnType.Number
+                            ? WinUpdateSourceTrigger.Default   // Commits once on Enter/Tab/LostFocus
+                            : WinUpdateSourceTrigger.PropertyChanged // Commits immediately for CheckBox/ToggleSwitch/ComboBox/Date/Time
             };
 
             if (usesMaskOrFormat)
@@ -336,7 +450,7 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
             _ => WinHorizontalAlignment.Left
         };
 
-        if (winCol is WinTableViewTextColumn or WinTableViewNumberColumn or WinTableViewDateColumn or WinTableViewTimeColumn)
+        if (winCol is WinTableViewTextColumn or WinTableViewNumberColumn or WinTableViewDateColumn or WinTableViewTimeColumn or WinTableViewComboBoxColumn)
         {
             var displayStyle = new WinStyle(typeof(WinTextBlock));
             displayStyle.Setters.Add(new WinSetter(WinTextBlock.ForegroundProperty, fgBrush));
@@ -349,7 +463,20 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
                 displayStyle.Setters.Add(new WinSetter(WinTextBlock.FontFamilyProperty, new WinFontFamily(fontFamilyName)));
             winCol.ElementStyle = displayStyle;
         }
-
+        else if (winCol is WinTableViewCheckBoxColumn)
+        {
+            var displayStyle = new WinStyle(typeof(WinCheckBox));
+            displayStyle.Setters.Add(new WinSetter(FrameworkElement.HorizontalAlignmentProperty,
+                col.HorizontalTextAlignment.HasValue ? winHorizAlign : WinHorizontalAlignment.Center));
+            winCol.ElementStyle = displayStyle;
+        }
+        else if (winCol is WinTableViewToggleSwitchColumn)
+        {
+            var displayStyle = new WinStyle(typeof(WinToggleSwitch));
+            displayStyle.Setters.Add(new WinSetter(FrameworkElement.HorizontalAlignmentProperty,
+                col.HorizontalTextAlignment.HasValue ? winHorizAlign : WinHorizontalAlignment.Center));
+            winCol.ElementStyle = displayStyle;
+        }
         if (winCol is WinTableViewTextColumn)
         {
             var editStyle = new WinStyle(typeof(WinTextBox));
@@ -362,59 +489,32 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
                 editStyle.Setters.Add(new WinSetter(WinControl.FontFamilyProperty, new WinFontFamily(fontFamilyName)));
             winCol.EditingElementStyle = editStyle;
         }
-        else if (winCol is WinTableViewCheckBoxColumn or WinTableViewToggleSwitchColumn)
+        
+
+    }
+
+    public override void SetVirtualView(IView view)
+    {
+        _isConnecting = true;
+        try
         {
-            var displayStyle = new WinStyle(typeof(FrameworkElement));
-            displayStyle.Setters.Add(new WinSetter(FrameworkElement.HorizontalAlignmentProperty,
-                col.HorizontalTextAlignment.HasValue ? winHorizAlign : WinHorizontalAlignment.Center));
-            winCol.ElementStyle = displayStyle;
+            base.SetVirtualView(view);
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+
+        if (VirtualView is not null)
+        {
+            ApplyMaterialDesign3Theme(this, VirtualView);
+            SubscribeColumns(VirtualView.Columns);
+            RebuildColumns(VirtualView.Columns);
+            BindItemsSource();
+            MapSelectedItem(this, VirtualView);
+            MapSelectedItems(this, VirtualView);
         }
     }
-    //private static void ApplyColumnElementStyles(
-    //MaterialTableView table, WinTableViewBoundColumn winCol, TextAlignment align, MaterialTableColumn col)
-    //{
-    //    WinTextAlignment winTextAlign = align switch
-    //    {
-    //        TextAlignment.End => WinTextAlignment.Right,
-    //        TextAlignment.Center => WinTextAlignment.Center,
-    //        _ => WinTextAlignment.Left
-    //    };
-
-    //    WinHorizontalAlignment winHorizAlign = align switch
-    //    {
-    //        TextAlignment.End => WinHorizontalAlignment.Right,
-    //        TextAlignment.Center => WinHorizontalAlignment.Center,
-    //        _ => WinHorizontalAlignment.Left
-    //    };
-
-    //    if (winCol is WinTableViewTextColumn)
-    //    {
-    //        var displayStyle = new WinStyle(typeof(WinTextBlock));
-    //        displayStyle.Setters.Add(new WinSetter(WinTextBlock.TextAlignmentProperty, winTextAlign));
-    //        displayStyle.Setters.Add(new WinSetter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
-    //        winCol.ElementStyle = displayStyle;
-
-    //        var editStyle = new WinStyle(typeof(WinTextBox));
-    //        editStyle.Setters.Add(new WinSetter(WinTextBox.TextAlignmentProperty, winTextAlign));
-    //        editStyle.Setters.Add(new WinSetter(FrameworkElement.HorizontalAlignmentProperty, WinHorizontalAlignment.Stretch));
-    //        winCol.EditingElementStyle = editStyle;
-    //    }
-    //    else if (winCol is WinTableViewNumberColumn)
-    //    {
-    //        var displayStyle = new WinStyle(typeof(WinTextBlock));
-    //        displayStyle.Setters.Add(new WinSetter(WinTextBlock.TextAlignmentProperty, winTextAlign));
-    //        displayStyle.Setters.Add(new WinSetter(FrameworkElement.VerticalAlignmentProperty, Microsoft.UI.Xaml.VerticalAlignment.Center));
-    //        winCol.ElementStyle = displayStyle;
-    //    }
-    //    else if (winCol is WinTableViewCheckBoxColumn or WinTableViewToggleSwitchColumn)
-    //    {
-    //        var displayStyle = new WinStyle(typeof(FrameworkElement));
-    //        displayStyle.Setters.Add(new WinSetter(FrameworkElement.HorizontalAlignmentProperty,
-    //            col.HorizontalTextAlignment.HasValue ? winHorizAlign : WinHorizontalAlignment.Center));
-    //        winCol.ElementStyle = displayStyle;
-    //    }
-    //}
-
     private static void ApplyMaterialDesign3Theme(TableViewHandler handler, MaterialTableView v)
     {
         bool isDark = MauiApplication.Current?.RequestedTheme == AppTheme.Dark;
@@ -429,7 +529,7 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
         // MD3 Color Palette (falls back cleanly when custom color BindableProperties aren't set)
         var surface = ToWinBrush(resolvedSurfaceColor);
         var headerBg = ToWinBrush(v.HeaderBackgroundColor ?? Color.FromArgb(isDark ? "#211F26" : "#F3EDF7"));
-        var headerFg = ToWinBrush(v.HeaderTextColor ?? Color.FromArgb(isDark ? "#E6E0E9" : "#1D1B20"));
+        var headerFg = ToWinBrush(v.HeaderTextColor ?? resolvedTextColor);
         var altRowBg = ToWinBrush(v.AlternateRowColor ?? Color.FromArgb(isDark ? "#1D1B20" : "#F7F2FA"));
         var textFg = ToWinBrush(resolvedTextColor);
         var outline = ToWinBrush(v.OutlineColor ?? Color.FromArgb(isDark ? "#49454F" : "#CAC4D0"));
@@ -482,6 +582,10 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
         tv.VerticalGridLinesStroke = outline;
         tv.HorizontalGridLinesStrokeThickness = v.GridLinesMode is MaterialTableGridLinesMode.Horizontal or MaterialTableGridLinesMode.All ? 1d : 0d;
         tv.VerticalGridLinesStrokeThickness = v.GridLinesMode is MaterialTableGridLinesMode.Vertical or MaterialTableGridLinesMode.All ? 1d : 0d;
+        handler.PlatformView.EmptyOverlay.Foreground = textFg;
+        handler.PlatformView.EmptyOverlay.FontSize = v.FontSize;
+        if (!string.IsNullOrWhiteSpace(v.FontFamily))
+            handler.PlatformView.EmptyOverlay.FontFamily = new WinFontFamily(v.FontFamily);
     }
 
     private static WinSolidColorBrush ToWinBrush(Color c)
@@ -498,16 +602,250 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
 
     static partial void MapItemsSource(TableViewHandler handler, MaterialTableView virtualView)
     {
-        handler.Table.ItemsSource = virtualView.ItemsSource switch
+        if (handler._isConnecting) return;
+        handler.BindItemsSource();
+    }
+
+    static partial void MapAllowUserToAddRows(TableViewHandler handler, MaterialTableView virtualView)
+    {
+        if (handler._isConnecting) return;
+        handler.BindItemsSource();
+    }
+
+    static partial void MapAllowUserToDeleteRows(TableViewHandler handler, MaterialTableView virtualView) { }
+
+    private void BindItemsSource()
+    {
+        UnsubscribeItemsSource();
+        _proxyItems = null;
+        _draftItem = null;
+
+        if (VirtualView?.ItemsSource is null)
         {
-            null => null,
-            IList list => list,
-            _ => virtualView.ItemsSource.Cast<object>().ToList()
-        };
+            Table.ItemsSource = null;
+            UpdateEmptyOverlay(); // <-- see #2 below
+            return;
+        }
+
+        if (VirtualView.ItemsSource is INotifyCollectionChanged observable)
+        {
+            _subscribedItemsSource = observable;
+            _subscribedItemsSource.CollectionChanged += OnSourceCollectionChanged;
+        }
+
+        if (VirtualView.AllowUserToAddRows && !VirtualView.IsReadOnly && VirtualView.ItemsSource is IList sourceList)
+        {
+            _proxyItems = new ObservableCollection<object>();
+            foreach (var item in sourceList)
+                _proxyItems.Add(item);
+
+            AppendFreshDraftRow();
+            Table.ItemsSource = _proxyItems;
+        }
+        else
+        {
+            var items = VirtualView.ItemsSource switch
+            {
+                IList list => list,
+                _ => VirtualView.ItemsSource.Cast<object>().ToList()
+            };
+
+            Table.ItemsSource = items;
+        }
+
+        UpdateEmptyOverlay();
+    }
+
+    private void UnsubscribeItemsSource()
+    {
+        if (_subscribedItemsSource is not null)
+        {
+            _subscribedItemsSource.CollectionChanged -= OnSourceCollectionChanged;
+            _subscribedItemsSource = null;
+        }
+    }
+
+    private void OnSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_isSyncingProxy || _proxyItems is null || VirtualView?.ItemsSource is not IList sourceList)
+            return;
+
+        if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems is not null)
+        {
+            int insertAt = _draftItem is not null ? Math.Max(0, _proxyItems.Count - 1) : _proxyItems.Count;
+            foreach (var item in e.NewItems)
+                _proxyItems.Insert(insertAt++, item);
+        }
+        else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems is not null)
+        {
+            foreach (var item in e.OldItems)
+                _proxyItems.Remove(item);
+        }
+        else
+        {
+            _proxyItems.Clear();
+            foreach (var item in sourceList)
+                _proxyItems.Add(item);
+
+            if (_draftItem is not null)
+                _proxyItems.Add(_draftItem);
+        }
+    }
+    private void AppendFreshDraftRow()
+    {
+        if (_proxyItems is null || VirtualView is null) return;
+
+        object? draft = CreateNewItemInstance();
+        if (draft is null) return;
+
+        _draftItem = draft;
+        
+        _proxyItems.Add(draft);
+    }
+
+    private object? CreateNewItemInstance()
+    {
+        if (VirtualView?.NewItemFactory is { } factory)
+            return factory();
+
+        if (VirtualView?.ItemsSource is null)
+            return null;
+
+        // Infer T from IEnumerable<T> / ObservableCollection<T>
+        var enumerableInterface = VirtualView.ItemsSource.GetType()
+            .GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+        Type? itemType = enumerableInterface?.GetGenericArguments()[0];
+        if (itemType is null || itemType == typeof(object))
+            itemType = _proxyItems?.FirstOrDefault(x => x is not null && !ReferenceEquals(x, _draftItem))?.GetType();
+
+        if (itemType is null)
+            return null;
+
+        try
+        {
+            return Activator.CreateInstance(itemType);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private Dictionary<string, PropertyInfo> GetCachedProperties(Type type)
+    {
+        if (_propertyCache.TryGetValue(type, out var cached))
+            return cached;
+
+        cached = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                     .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
+                     .ToDictionary(p => p.Name, p => p, StringComparer.Ordinal);
+
+        _propertyCache[type] = cached;
+        return cached;
+    }
+
+
+
+
+    
+    private bool TryGetPropertyValue(object root, string bindingPath, out object? value)
+    {
+        if (!bindingPath.Contains('.'))
+        {
+            if (GetCachedProperties(root.GetType()).TryGetValue(bindingPath, out var prop))
+            {
+                value = prop.GetValue(root);
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        object? current = root;
+        foreach (var segment in bindingPath.Split('.'))
+        {
+            if (current is null)
+            {
+                value = null;
+                return true; // Intermediate object is null -> valid null display value
+            }
+
+            if (!GetCachedProperties(current.GetType()).TryGetValue(segment, out var prop))
+            {
+                value = null;
+                return false;
+            }
+
+            current = prop.GetValue(current);
+        }
+
+        value = current;
+        return true;
+    }
+
+
+
+
+
+    private void PromoteDraftRow(object promotedItem)
+    {
+        if (VirtualView?.ItemsSource is not IList sourceList)
+            return;
+
+        try
+        {
+            _isSyncingProxy = true;
+            _draftItem = null;
+
+            // Add to real ItemsSource; promotedItem stays in place inside _proxyItems so Tab navigation keeps working!
+            sourceList.Add(promotedItem);
+            VirtualView.RaiseRowAdded(promotedItem);
+
+            AppendFreshDraftRow();
+        }
+        finally
+        {
+            _isSyncingProxy = false;
+        }
+    }
+
+    private void OnTablePreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Delete || VirtualView is null || !VirtualView.AllowUserToDeleteRows || VirtualView.IsReadOnly)
+            return;
+
+        // Never delete the whole row if the user is currently typing inside an editor!
+        var focused = FocusManager.GetFocusedElement(PlatformView.XamlRoot);
+        if (focused is TextBox or PasswordBox or RichEditBox or NumberBox or WinComboBox)
+            return;
+
+        if (VirtualView.ItemsSource is not IList sourceList || sourceList.IsFixedSize)
+            return;
+
+        var toDelete = Table.SelectedItems
+            .Cast<object>()
+            .Where(x => !ReferenceEquals(x, _draftItem))
+            .ToList();
+
+        if (toDelete.Count == 0 && Table.SelectedItem is not null && !ReferenceEquals(Table.SelectedItem, _draftItem))
+            toDelete.Add(Table.SelectedItem);
+
+        if (toDelete.Count == 0)
+            return;
+
+        e.Handled = true;
+        foreach (var item in toDelete)
+        {
+            sourceList.Remove(item);
+            VirtualView.RaiseRowDeleted(item);
+        }
     }
 
     static partial void MapColumns(TableViewHandler handler, MaterialTableView virtualView)
     {
+        if (handler._isConnecting) return;
         handler.SubscribeColumns(virtualView.Columns);
         handler.RebuildColumns(virtualView.Columns);
     }
@@ -517,7 +855,7 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
 
     static partial void MapSelectedItem(TableViewHandler handler, MaterialTableView virtualView)
     {
-        if (handler._isUpdatingSelection) return;
+        if (handler._isConnecting || handler._isUpdatingSelection) return;
         try
         {
             handler._isUpdatingSelection = true;
@@ -529,7 +867,8 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
 
     static partial void MapSelectedItems(TableViewHandler handler, MaterialTableView virtualView)
     {
-        if (handler._isUpdatingSelection || virtualView.SelectedItems is null) return;
+        if (handler._isConnecting || handler._isUpdatingSelection || virtualView.SelectedItems is null) return;
+
         try
         {
             handler._isUpdatingSelection = true;
@@ -572,8 +911,11 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
     }
 
     static partial void MapIsReadOnly(TableViewHandler handler, MaterialTableView virtualView)
-        => handler.Table.IsReadOnly = virtualView.IsReadOnly;
-
+    {
+        handler.Table.IsReadOnly = virtualView.IsReadOnly;
+        if (!handler._isConnecting && virtualView.AllowUserToAddRows)
+            handler.BindItemsSource();
+    }
     static partial void MapCanSortColumns(TableViewHandler handler, MaterialTableView virtualView)
         => handler.Table.CanSortColumns = virtualView.CanSortColumns;
 
@@ -597,6 +939,7 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, PlatformT
 
     static partial void MapAppearance(TableViewHandler handler, MaterialTableView virtualView)
     {
+        if (handler._isConnecting) return;
         ApplyMaterialDesign3Theme(handler, virtualView);
 
         if (virtualView.Columns is { Count: > 0 })

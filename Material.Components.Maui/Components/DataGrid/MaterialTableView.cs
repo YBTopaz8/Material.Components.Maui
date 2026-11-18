@@ -11,6 +11,67 @@ namespace Material.Components.Maui;
 [ContentProperty(nameof(Columns))]
 public partial class MaterialTableView : View
 {
+    public event EventHandler<MaterialTableCellValueChangedEventArgs>? CellValueChanged;
+    public event EventHandler<MaterialTableRowEventArgs>? RowAdded;
+    public event EventHandler<MaterialTableRowEventArgs>? RowDeleted;
+    public static readonly BindableProperty EmptyTextProperty =
+    BindableProperty.Create(nameof(EmptyText), typeof(string), typeof(MaterialTableView), null);
+
+    public string? EmptyText
+    {
+        get => (string?)GetValue(EmptyTextProperty);
+        set => SetValue(EmptyTextProperty, value);
+    }
+
+    public void ClearFilters() => Handler?.Invoke(nameof(ClearFilters));
+    public void ClearSorting() => Handler?.Invoke(nameof(ClearSorting));
+    public static readonly BindableProperty AllowUserToAddRowsProperty =
+        BindableProperty.Create(nameof(AllowUserToAddRows), typeof(bool), typeof(MaterialTableView), false);
+
+    public static readonly BindableProperty AllowUserToDeleteRowsProperty =
+        BindableProperty.Create(nameof(AllowUserToDeleteRows), typeof(bool), typeof(MaterialTableView), false);
+
+    public static readonly BindableProperty NewItemFactoryProperty =
+        BindableProperty.Create(nameof(NewItemFactory), typeof(Func<object>), typeof(MaterialTableView), null);
+
+    public bool AllowUserToAddRows
+    {
+        get => (bool)GetValue(AllowUserToAddRowsProperty);
+        set => SetValue(AllowUserToAddRowsProperty, value);
+    }
+
+    public bool AllowUserToDeleteRows
+    {
+        get => (bool)GetValue(AllowUserToDeleteRowsProperty);
+        set => SetValue(AllowUserToDeleteRowsProperty, value);
+    }
+
+
+    public Func<object>? NewItemFactory
+    {
+        get => (Func<object>?)GetValue(NewItemFactoryProperty);
+        set => SetValue(NewItemFactoryProperty, value);
+    }
+
+    internal void RaiseCellValueChanged(
+    object rowItem,
+    MaterialTableColumn? column,
+    string bindingPath,
+    object? oldValue,
+    object? newValue,
+    bool isNewRow)
+    {
+        var args = new MaterialTableCellValueChangedEventArgs(
+            rowItem, column, bindingPath, oldValue, newValue, isNewRow);
+
+        CellValueChanged?.Invoke(this, args);
+        column?.RaiseValueChanged(args);
+    }
+    internal void RaiseRowAdded(object rowItem)
+        => RowAdded?.Invoke(this, new MaterialTableRowEventArgs(rowItem));
+
+    internal void RaiseRowDeleted(object rowItem)
+        => RowDeleted?.Invoke(this, new MaterialTableRowEventArgs(rowItem));
     public event EventHandler<MaterialTableSelectionChangedEventArgs>? SelectionChanged;
     public event EventHandler<MaterialTableCellValidatingEventArgs>? CellValidating;
     public event EventHandler<MaterialTableCellEditedEventArgs>? CellEdited;

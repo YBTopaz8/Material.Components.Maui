@@ -27,9 +27,13 @@ public partial class TableViewHandler : ViewHandler<MaterialTableView, RecyclerV
     static partial void MapMinColumnWidth(TableViewHandler handler, MaterialTableView virtualView) { }
     static partial void MapMaxColumnWidth(TableViewHandler handler, MaterialTableView virtualView) { }
     static partial void MapAppearance(TableViewHandler handler, MaterialTableView virtualView) { }
-
+    static partial void MapAllowUserToAddRows(TableViewHandler handler, MaterialTableView virtualView) { }
+    static partial void MapAllowUserToDeleteRows(TableViewHandler handler, MaterialTableView virtualView) { }
     static partial void MapSelectAll(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
     static partial void MapDeselectAll(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
     static partial void MapScrollToItem(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
     static partial void MapGetCsvContent(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
+    static partial void MapEmptyText(TableViewHandler handler, MaterialTableView virtualView) { }
+    static partial void MapClearFilters(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
+    static partial void MapClearSorting(TableViewHandler handler, MaterialTableView virtualView, object? args) { }
 }

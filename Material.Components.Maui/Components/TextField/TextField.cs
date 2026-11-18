@@ -107,7 +107,7 @@ public class TextField
 
     public InputType InputType { get => (InputType)this.GetValue(InputTypeProperty); set => this.SetValue(InputTypeProperty, value); }
     public string LabelText { get => (string)this.GetValue(LabelTextProperty); set => this.SetValue(LabelTextProperty, value); }
-    public Color LabelFontColor { get => (Color)this.GetValue(LabelFontColorProperty); set => this.SetValue(LabelFontColorProperty, value); }
+    public Color? LabelFontColor { get => (Color?)this.GetValue(LabelFontColorProperty); set => this.SetValue(LabelFontColorProperty, value); }
     public string SupportingText { get => (string)this.GetValue(SupportingTextProperty); set => this.SetValue(SupportingTextProperty, value); }
     public Color SupportingFontColor { get => (Color)this.GetValue(SupportingFontColorProperty); set => this.SetValue(SupportingFontColorProperty, value); }
     public Color FontColor { get => (Color)this.GetValue(FontColorProperty); set => this.SetValue(FontColorProperty, value); }
